@@ -1,41 +1,49 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AnoCore Broadcast · Scoreboard</title>
-<link rel="stylesheet" href="/overlay.css">
-<script src="/overlay.js" defer></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AnoCore Broadcast · Live Graphics</title>
+  <link rel="stylesheet" href="/overlay.css">
+  <script src="/overlay.js" defer></script>
 </head>
 <body>
-<main aria-label="CS2 broadcast scoreboard">
-  <div id="demo-mark" class="demo-mark" hidden>DEMO · SYNTHETIC DATA</div>
+<main class="broadcast" aria-label="Counter-Strike broadcast graphics">
+  <div class="production-bar">
+    <div class="production-brand"><span class="brand-mark">A</span><span>ANOCORE <em>BROADCAST</em></span></div>
+    <div id="demo-mark" class="demo-mark" hidden>DEMO <span>· SYNTHETIC DATA</span></div>
+    <span class="production-tag">MATCH CENTER <i></i> V1</span>
+  </div>
   <section id="board" class="board is-unavailable" aria-live="polite">
-    <div class="team team-ct"><span id="ct-name" class="side">COUNTER-TERRORISTS</span><strong id="ct-score">—</strong></div>
-    <div class="center">
-      <div class="brand">ANOCORE <span>BROADCAST</span></div>
-      <div id="map" class="map">NO LIVE MATCH</div>
-      <div id="round" class="round">WAITING FOR DATA</div>
-      <div id="phase" class="phase"></div>
-      <div id="reported-timer" class="phase" aria-label="Reported GSI phase countdown"></div>
+    <div class="team team-ct">
+      <div class="team-identity"><span class="team-kicker">DEFENDING SIDE <b>CT</b></span><strong id="ct-name" class="side">COUNTER-TERRORISTS</strong></div>
+      <strong id="ct-score" class="score">—</strong>
     </div>
-    <div class="team team-t"><strong id="t-score">—</strong><span id="t-name" class="side">TERRORISTS</span></div>
+    <div class="center">
+      <div class="center-top"><span class="center-rule"></span><span class="brand">LIVE MATCH</span><span class="center-rule"></span></div>
+      <div id="map" class="map">NO LIVE MATCH</div>
+      <div class="round-line"><span id="round" class="round">WAITING FOR DATA</span><span class="round-dot"></span><span id="phase" class="phase"></span></div>
+      <div id="reported-timer" class="reported-timer" aria-label="Reported GSI phase countdown"></div>
+    </div>
+    <div class="team team-t">
+      <strong id="t-score" class="score">—</strong>
+      <div class="team-identity"><span class="team-kicker">ATTACKING SIDE <b>T</b></span><strong id="t-name" class="side">TERRORISTS</strong></div>
+    </div>
   </section>
   <div id="notice" role="status" class="notice">WAITING FOR LIVE DATA</div>
-  <section id="roster" class="roster" aria-label="Live player roster" hidden>
-    <div class="roster-side ct-roster"><h2 id="ct-roster-name">COUNTER-TERRORISTS</h2><div id="ct-players" class="player-list"></div></div>
-    <div class="roster-side t-roster"><h2 id="t-roster-name">TERRORISTS</h2><div id="t-players" class="player-list"></div></div>
+  <section class="broadcast-stage" aria-label="Player information and radar">
+    <section id="roster" class="roster" aria-label="Live player roster" hidden>
+      <div class="roster-side ct-roster"><div class="roster-heading"><span class="roster-icon">CT</span><div><span class="roster-kicker">DEFENDERS</span><h2 id="ct-roster-name">COUNTER-TERRORISTS</h2></div></div><div id="ct-players" class="player-list"></div></div>
+      <div class="roster-side t-roster"><div class="roster-heading"><span class="roster-icon">T</span><div><span class="roster-kicker">ATTACKERS</span><h2 id="t-roster-name">TERRORISTS</h2></div></div><div id="t-players" class="player-list"></div></div>
+    </section>
+    <section id="radar-preview" class="radar-preview" aria-label="Synthetic radar demo" hidden>
+      <div class="radar-heading"><div class="radar-title"><span class="radar-pulse"></span><strong>TACTICAL RADAR</strong></div><span id="radar-warning">NOT A REAL MAP · DEMO ONLY</span></div>
+      <div class="radar-grid" id="radar-grid" aria-label="Synthetic positional grid"><div class="radar-crosshair"></div><div id="radar-markers" class="radar-markers"></div></div>
+      <div class="radar-legend"><span><i class="legend-ct"></i> COUNTER-TERRORISTS</span><span><i class="legend-t"></i> TERRORISTS</span></div>
+    </section>
   </section>
   <div id="roster-notice" class="roster-notice" hidden>PLAYER DATA NOT AVAILABLE FROM OBSERVER</div>
-  <section id="radar-preview" class="radar-preview" aria-label="Synthetic radar demo" hidden>
-    <div class="radar-heading">
-      <strong>SYNTHETIC RADAR</strong>
-      <span id="radar-warning">NOT A REAL MAP · DEMO ONLY</span>
-    </div>
-    <div class="radar-grid" id="radar-grid" aria-label="Synthetic positional grid">
-      <div id="radar-markers" class="radar-markers"></div>
-    </div>
-  </section>
+  <div class="broadcast-footer"><span>CS2 · BROADCAST GRAPHICS</span><span>ANOCORE SYSTEMS</span></div>
 </main>
 </body>
 </html>

@@ -17,6 +17,9 @@ AnoCore Broadcast is a standalone product, not a submodule of the gameserver. An
 ## Position telemetry boundary
 The observer GSI adapter can ingest and strictly parse `allplayers_position` and `forward` as finite three-dimensional world-space vectors. These values stay in the internal normalized observer payload and are deliberately **not** exposed through the public OBS projection. Map-specific coordinate calibration, orientation, altitude layering, latency verification and spectator-only access rules must be implemented and tested before introducing radar graphics. The sender is subject to GSI's own observer visibility rules, and this project must not create a player-facing position leak.
 
+## Radar calibration boundary
+A tested, strict two-anchor similarity transform is available in `services/engine/src/calibration.js`. Its profiles must be explicitly approved and matched to a map. It handles optional non-overlapping altitude floors, rotation, scaling and translation without inventing coordinates. There are **no verified real-map calibration profiles** and no public browser radar endpoint yet. Map imagery, observer-only role gating, and GOTV video delay still require acceptance work.
+
 ## Planned\n- Type-specific payload schemas, an authenticated read API for approved broadcast operators, and secure runtime lifecycle management.
 - Production-grade journal lifecycle: rotation, recovery after partial writes, cross-process locking, bounded memory, and resilience to disk failures. The initial single-process write-ahead journal is optional and experimental.
 - Broadcast clock alignment validated against video and GOTV delay; current time gate and displayed GSI-reported phase timer alone are insufficient.

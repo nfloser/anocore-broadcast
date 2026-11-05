@@ -21,7 +21,7 @@ Independent CS2 broadcast production suite. The goal is a configurable and relia
 
 ## Windows desktop preview
 
-An early Electron desktop shell starts a synthetic HUD and can switch to a local CS2 spectator GSI receiver with Steam-library discovery for explicit CFG export, includes sandboxed operator controls with persistent team colors/names, and stops its local GSI/HUD servers when closed. It is **not yet** a live production application. See [Windows desktop preview](apps/desktop/README.md) for `npm run desktop`, unsigned CI artifacts and limitations. A tested, signed Windows release remains tracked in Issue #41.
+An early Electron desktop shell starts a synthetic HUD and can switch to a local CS2 spectator GSI receiver with Steam-library discovery for explicit CFG export and encrypted Windows-user key reuse, includes sandboxed operator controls with persistent team colors/names, and stops its local GSI/HUD servers when closed. It is **not yet** a live production application. See [Windows desktop preview](apps/desktop/README.md) for `npm run desktop`, unsigned CI artifacts and limitations. A tested, signed Windows release remains tracked in Issue #41.
 
 ## Quick preview
 

@@ -123,6 +123,10 @@ test('desktop IPC uses isolated controls renderer and never embeds reusable toke
   assert.match(preload, /broadcast:session:status/);
   assert.match(main, /Export CS2 GSI Config/);
   assert.match(main, /Start Live Observer/);
+  assert.match(main, /safeStorage/);
+  assert.match(main, /Reset saved GSI key/);
+  assert.match(main, /credentialStore\.getOrCreate\(\)/);
+  assert.match(main, /credentialStore\.reset\(\)/);
   assert.doesNotMatch(main, /console\.log/);
   assert.doesNotMatch(client, /innerHTML/);
   assert.match(page, /Content-Security-Policy/);

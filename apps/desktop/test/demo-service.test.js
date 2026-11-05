@@ -247,3 +247,26 @@ test('mode manager switches successfully with orderly cleanup', async () => {
   await manager.close();
   assert.deepEqual(calls, ['start demo', 'stop demo', 'start live', 'stop live']);
 });
+
+test('desktop shutdown waits for an in-flight mode switch and closes new listeners', async () => {
+  const { createDesktopModes } = await import('../src/modes.js');
+  const calls = [];
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const manager = createDesktopModes({
+    demo: async () => ({ mode: 'demo', close: async () => calls.push('close demo') }),
+    live: async () => {
+      await gate;
+      return { mode: 'live', close: async () => calls.push('close live') };
+    },
+  });
+  await manager.switchTo('demo');
+  const launch = manager.switchTo('live');
+  const stop = manager.close();
+  release();
+  await launch;
+  await stop;
+  assert.equal(manager.current, null);
+  assert.deepEqual(calls, ['close demo', 'close live']);
+  await assert.rejects(manager.switchTo('demo'), /closed/);
+});

@@ -51,6 +51,11 @@ test('local overlay is static, read-only, CSP-protected and rejects public bindi
   assert.match(page.headers.get('content-security-policy'), /default-src 'none'/);
   assert.equal((await fetch(base + '/overlay.css')).status, 200);
   assert.equal((await fetch(base + '/overlay.js')).status, 200);
+  assert.equal((await fetch(base + '/?utm_source=chatgpt.com')).status, 200);
+  assert.equal((await fetch(base + '/overlay.css?cache=123')).status, 200);
+  assert.equal((await fetch(base + '/overlay.js?cache=123')).status, 200);
+  assert.equal((await fetch(base + '/api/state?utm_source=chatgpt.com')).status, 200);
+  assert.equal((await fetch(base + '/nonexistent?utm_source=chatgpt.com')).status, 404);
   assert.equal((await fetch(base + '/api/state')).status, 200);
   assert.equal((await fetch(base + '/api/state', { method: 'POST' })).status, 405);
   assert.equal((await fetch(base + '/missing')).status, 404);
@@ -222,4 +227,28 @@ test('world positions remain private until map transforms and viewer permissions
   assert.equal(Object.hasOwn(projected.players[0], 'position'), false);
   assert.equal(Object.hasOwn(projected.players[0], 'forward'), false);
   assert.equal(JSON.stringify(projected).includes('566.21'), false);
+});
+
+test('HUD redesign includes the premium stage, health bars and safe synthetic radar warning', async t => {
+  const server = createOverlayServer({ scoreboard: () => ({ status: 'unavailable' }), port: 0 });
+  const address = await server.listen();
+  t.after(() => server.close());
+  const base = 'http://127.0.0.1:' + address.port;
+  const html = await (await fetch(base + '/')).text();
+  const css = await (await fetch(base + '/overlay.css')).text();
+  const js = await (await fetch(base + '/overlay.js')).text();
+  assert.match(html, /class="broadcast-stage"/);
+  assert.match(html, /id="ct-players"/);
+  assert.match(html, /id="t-players"/);
+  assert.match(html, /id="radar-markers"/);
+  assert.match(html, /NOT A REAL MAP/);
+  assert.match(html, /DEMO.*SYNTHETIC DATA/);
+  assert.match(css, /\.hp-meter/);
+  assert.match(css, /\.radar-preview/);
+  assert.match(css, /prefers-reduced-motion/);
+  assert.match(css, /\.broadcast-stage\.no-radar/);
+  assert.match(js, /classList\.toggle\('no-radar'/);
+  assert.match(js, /document\.createElement\('span'\)/);
+  assert.match(js, /\.textContent = String\(value\)/);
+  assert.doesNotMatch(js, /innerHTML/);
 });

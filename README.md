@@ -16,7 +16,7 @@ Independent CS2 broadcast production suite. The goal is a configurable and relia
 - `adapters/cs2` — GSI ingest and freshness tracking (**implemented**).
 - `services/engine` — HTTP-to-engine pipeline, in-memory event ordering, optional journal recovery, gap detection, delayed snapshot reads (**partially implemented**).
 - `adapters/anocore` — optional AnoCore/MatchZy integration (**planned**).
-- `apps/overlay` — initial OBS HUD with an allowlisted spectator roster (**initial implementation**).
+- `apps/overlay` — redesigned local OBS HUD with allowlisted spectator roster and demo-only synthetic radar (**initial implementation**).
 - `apps/manager` — first authenticated local operator controls for team labels, colors and roster visibility (**implemented; optional local persistence**).
 
 ## Quick preview

@@ -27,6 +27,17 @@ function createPlayerRow(player) {
     const element = document.createElement('span');
     element.className = className;
     element.textContent = String(value);
+    if (className === 'player-health') {
+      const meter = document.createElement('span');
+      meter.className = 'hp-meter';
+      const fill = document.createElement('span');
+      fill.className = 'hp-fill';
+      const hp = Number.isInteger(player.health) ?
+        Math.max(0, Math.min(100, player.health)) : 0;
+      fill.style.width = hp + '%';
+      meter.append(fill);
+      element.append(meter);
+    }
     row.append(element);
   }
   return row;
@@ -75,7 +86,10 @@ function render(state) {
     document.documentElement.style.setProperty('--t-color', settings.tColor);
   }
   const live = state?.status === 'live';
-  drawRadar(state?.radar, live && state?.demo === true);
+  const radarVisible = live && state?.demo === true &&
+    state?.radar?.kind === 'synthetic';
+  document.querySelector('.broadcast-stage').classList.toggle('no-radar', !radarVisible);
+  drawRadar(state?.radar, radarVisible);
   elements.board.classList.toggle('is-unavailable', !live);
   elements['ct-score'].textContent = live ? display(state.ctScore) : '—';
   elements['t-score'].textContent = live ? display(state.tScore) : '—';

@@ -29,7 +29,8 @@ function createPlayerRow(player) {
 }
 
 function render(state) {
-  elements['demo-mark'].hidden = state?.demo !== true;
+  if (state?.demo === true) elements['demo-mark'].dataset.demo = 'true';
+  elements['demo-mark'].hidden = elements['demo-mark'].dataset.demo !== 'true';
   const live = state?.status === 'live';
   elements.board.classList.toggle('is-unavailable', !live);
   elements['ct-score'].textContent = live ? display(state.ctScore) : '—';

@@ -27,7 +27,7 @@ export function createDemoFrame(step, token) {
   const round = Math.floor(step / 10) + 1;
   return {
     auth: { token },
-    provider: { name: 'Counter-Strike: Global Offensive', timestamp: Math.floor(Date.now() / 1000) },
+    provider: { name: 'Counter-Strike: Global Offensive', timestamp: 1793900000 + step * 2 },
     map: { name: 'de_nuke', phase: 'live', round,
       team_ct: { score: 5 + Math.floor(round / 2) },
       team_t: { score: 4 + Math.floor((round - 1) / 2) } },

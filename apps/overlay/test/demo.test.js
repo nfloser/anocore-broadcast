@@ -8,6 +8,7 @@ import { createOverlayServer } from '../src/server.js';
 
 test('demo fixture is deterministic, has ten players and no real steam credentials', () => {
   const frame = createDemoFrame(3, 'fixture-secret');
+  assert.deepEqual(createDemoFrame(3, 'fixture-secret'), frame);
   const payload = normalizeGsiSnapshot(frame);
   assert.equal(payload.players.length, 10);
   assert.equal(payload.players.filter(p => p.team === 'CT').length, 5);

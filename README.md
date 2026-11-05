@@ -21,7 +21,7 @@ Independent CS2 broadcast production suite. The goal is a configurable and relia
 
 ## Quick preview
 
-Run `npm run demo`, then open `http://127.0.0.1:3009/`. The viewer visibly marks the generated content as **DEMO** and runs entirely on localhost. For real CS2 ingest see the [OBS quickstart](apps/overlay/README.md).
+Run `npm run demo`, then open `http://127.0.0.1:3009/`. The viewer visibly marks the generated content as **DEMO** and runs entirely on localhost. Set `ANOCORE_ADMIN_TOKEN` (32+ bytes) first to use the local Operator Manager with the demo at `http://127.0.0.1:3010/`. For real CS2 ingest see the [OBS quickstart](apps/overlay/README.md).
 
 ## Checks
 

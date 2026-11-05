@@ -12,12 +12,11 @@ AnoCore Broadcast is a standalone product, not a submodule of the gameserver. An
 - Explicit journal **integrity checkpoints** record SHA-256 digests of committed prefixes and verify them on restart. These are not state snapshots or permission to delete event history. The CLI starts this composed runtime. Tests exercise the complete HTTP-to-engine path.
 - Automated regression tests for malformed, unauthorized, oversized, disconnected/stale, duplicate, reordered and delayed-input cases.
 
-## Planned
-- Type-specific payload schemas, an authenticated read API for approved broadcast operators, and secure runtime lifecycle management.
+- Loopback-only read-only scoreboard server projects a small allowlisted subset of delayed state to OBS. No personal player information or authentication secret is available from its endpoint.\n\n## Planned\n- Type-specific payload schemas, an authenticated read API for approved broadcast operators, and secure runtime lifecycle management.
 - Production-grade journal lifecycle: rotation, recovery after partial writes, cross-process locking, bounded memory, and resilience to disk failures. The initial single-process write-ahead journal is optional and experimental.
 - Broadcast clock alignment validated against video and GOTV delay; current time gate alone is insufficient.
 - Round, halftime, overtime, match scoring and team reconciliation across data sources.
-- OBS graphics with visibly degraded state when sources are stale.
+- Full OBS broadcast graphics including players, radar, team names, events and theme editor; only a small CT/T scoreboard exists today.
 - Operator manager, authenticated match setup, themes, scenes and manual overrides.
 - Recording/replay: separate capture of video and event markers; no impact on game server.
 

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AnoCore Broadcast · Scoreboard</title>
+<link rel="stylesheet" href="/overlay.css">
+<script src="/overlay.js" defer></script>
+</head>
+<body>
+<main aria-label="CS2 broadcast scoreboard">
+  <section id="board" class="board is-unavailable" aria-live="polite">
+    <div class="team team-ct"><span class="side">COUNTER-TERRORISTS</span><strong id="ct-score">—</strong></div>
+    <div class="center">
+      <div class="brand">ANOCORE <span>BROADCAST</span></div>
+      <div id="map" class="map">NO LIVE MATCH</div>
+      <div id="round" class="round">WAITING FOR DATA</div>
+      <div id="phase" class="phase"></div>
+    </div>
+    <div class="team team-t"><strong id="t-score">—</strong><span class="side">TERRORISTS</span></div>
+  </section>
+  <div id="notice" role="status" class="notice">WAITING FOR LIVE DATA</div>
+</main>
+</body>
+</html>

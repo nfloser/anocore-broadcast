@@ -119,3 +119,9 @@ test('bounds and normalizes spectator roster without leaking Steam IDs', () => {
   assert.equal(JSON.stringify(projected).includes('76561198000000001'), false);
   assert.equal(JSON.stringify(projected).includes('not allowed'), false);
 });
+
+test('accepts CS2 GSI compatibility provider name still used by the game', () => {
+  const raw = fixture();
+  raw.provider.name = 'Counter-Strike: Global Offensive';
+  assert.equal(normalizeGsiSnapshot(raw).provider.name, raw.provider.name);
+});

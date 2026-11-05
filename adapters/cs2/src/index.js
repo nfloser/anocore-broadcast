@@ -29,7 +29,7 @@ export function normalizeGsiSnapshot(input) {
     throw new TypeError('GSI provider must be an object');
   }
   const source = input.provider;
-  if (source.name !== 'Counter-Strike 2') {
+  if (!['Counter-Strike 2', 'Counter-Strike: Global Offensive'].includes(source.name)) {
     throw new TypeError('Unsupported provider');
   }
 

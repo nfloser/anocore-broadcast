@@ -11,7 +11,7 @@ function isRecord(value) {
 function snapshotValid(payload) {
   // Reject invalid shapes early; only normalized observer snapshots are supported.
   if (!isRecord(payload) || !isRecord(payload.provider) ||
-      payload.provider.name !== 'Counter-Strike 2') return false;
+      !['Counter-Strike 2', 'Counter-Strike: Global Offensive'].includes(payload.provider.name)) return false;
   return ['map', 'round', 'player', 'bomb'].every(key =>
     payload[key] === undefined || isRecord(payload[key]));
 }

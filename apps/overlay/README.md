@@ -4,7 +4,7 @@ This is a *minimal working scoreboard*, not a full ten-player broadcast HUD. It 
 
 ## Preview without CS2
 
-Run `npm run demo` from the repository root. Open `http://127.0.0.1:3009/` in a browser or OBS Browser Source (1920 × 500). The app sends synthetic 5v5 match fixtures through the normal local authenticated GSI receiver and updates approximately every two seconds. A permanent red **DEMO · SYNTHETIC DATA** marker identifies the simulated output. It is not a live CS2 feed. The demo is an operator visual preview and an end-to-end test aid, not broadcast-ready production software.
+Run `npm run demo` from the repository root. Open `http://127.0.0.1:3009/` in a browser or OBS Browser Source (1920 × 500). The app sends synthetic 5v5 match fixtures through the normal local authenticated GSI receiver and updates approximately every two seconds. A permanent red **DEMO · SYNTHETIC DATA** marker identifies the simulated output. It is not a live CS2 feed. Set `ANOCORE_ADMIN_TOKEN` (32+ bytes) before `npm run demo` to also enable the local operator panel at `http://127.0.0.1:3010/`, using the same controls as live mode. Optional `ANOCORE_MANAGER_CONFIG_PATH` retains the demo layout across restarts. The demo is an operator visual preview and an end-to-end test aid, not broadcast-ready production software.
 
 ## Start locally
 

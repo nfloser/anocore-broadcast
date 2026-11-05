@@ -122,3 +122,124 @@ test('desktop IPC uses isolated controls renderer and never embeds reusable toke
   assert.match(page, /Content-Security-Policy/);
   assert.doesNotMatch(main + preload + client, /7656119/);
 });
+
+test('live observer is unavailable until authenticated GSI arrives and hides demo radar', async () => {
+  const { startDesktopLive } = await import('../src/live-service.js');
+  const { createDemoFrame } = await import('../../overlay/src/demo-fixture.js');
+  let now = 10_000;
+  const key = 'desktop-live-test-secret-0123456789';
+  const live = await startDesktopLive({
+    receiverPort: 0, overlayPort: 0, token: key,
+    clock: () => now, staleAfterMs: 1000,
+  });
+  try {
+    assert.equal(live.getStatus().mode, 'live');
+    assert.equal(live.getStatus().connection, 'waiting');
+    const endpoint = live.hudUrl + 'api/state';
+    const waiting = await (await fetch(endpoint)).json();
+    assert.equal(waiting.status, 'unavailable');
+    assert.equal(waiting.demo, undefined);
+    assert.equal(waiting.radar, undefined);
+
+    const config = live.getGsiConfig();
+    assert.match(config, /gamestate_integration/i);
+    assert.ok(config.includes(key));
+    assert.ok(!JSON.stringify(waiting).includes(key));
+    const result = await fetch(live.gsiUrl, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(createDemoFrame(3, key)),
+    });
+    assert.equal(result.status, 202);
+    const state = await (await fetch(endpoint)).json();
+    assert.equal(state.status, 'live');
+    assert.equal(state.map, 'de_nuke');
+    assert.equal(state.players.length, 10);
+    assert.equal(state.demo, undefined);
+    assert.equal(state.radar, undefined);
+    assert.ok(!JSON.stringify(state).includes('position'));
+    assert.ok(!JSON.stringify(state).includes(key));
+    assert.equal(live.getStatus().connection, 'live');
+
+    now = 11_001;
+    const stale = await (await fetch(endpoint)).json();
+    assert.deepEqual(stale.status, 'unavailable');
+    assert.equal(live.getStatus().connection, 'stale');
+  } finally {
+    await live.close();
+    await live.close();
+  }
+  await assert.rejects(fetch(live.hudUrl + 'api/state'));
+});
+
+test('live observer settings persist and malformed authentication is rejected', async t => {
+  const { startDesktopLive } = await import('../src/live-service.js');
+  const { createDemoFrame } = await import('../../overlay/src/demo-fixture.js');
+  const dir = mkdtempSync(join(tmpdir(), 'anocore-live-settings-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const filePath = join(dir, 'operator.json');
+  const live = await startDesktopLive({
+    receiverPort: 0, overlayPort: 0,
+    token: 'desktop-live-test-secret-0123456789', settingsPath: filePath,
+  });
+  try {
+    assert.equal(live.updateSettings({ ctName: 'Live Team', showRoster: false }).ctName, 'Live Team');
+    const unauthorized = createDemoFrame(1, 'wrong-token');
+    assert.equal((await fetch(live.gsiUrl, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(unauthorized),
+    })).status, 401);
+    const state = await (await fetch(live.hudUrl + 'api/state')).json();
+    assert.equal(state.status, 'unavailable');
+    assert.equal(state.settings.ctName, 'Live Team');
+    assert.ok(!readFileSync(filePath, 'utf8').includes('desktop-live-test-secret'));
+  } finally {
+    await live.close();
+  }
+});
+
+test('live config escapes no user data and rejects unsafe token and ports', async () => {
+  const { createObserverConfig } = await import('../src/gsi-config.js');
+  const key = 'a'.repeat(64);
+  const config = createObserverConfig({ token: key, port: 3008 });
+  assert.ok(config.includes('"token" "' + key + '"'));
+  assert.ok(config.includes('http://127.0.0.1:3008/gsi'));
+  assert.ok(config.includes('"allplayers_weapons" "1"'));
+  for (const invalid of ['short', 'abc"\n"uri" "evil', ' '.repeat(40), 'ä'.repeat(40)]) {
+    assert.throws(() => createObserverConfig({ token: invalid, port: 3008 }));
+  }
+  assert.throws(() => createObserverConfig({ token: key, port: 0 }));
+  assert.throws(() => createObserverConfig({ token: key, port: 70000 }));
+});
+
+test('mode manager stops old service and restores demo after failed live launch', async () => {
+  const { createDesktopModes } = await import('../src/modes.js');
+  const calls = [];
+  const manager = createDesktopModes({
+    demo: async () => ({ mode: 'demo', close: async () => { calls.push('close demo'); } }),
+    live: async () => { calls.push('start live'); throw new Error('Port occupied'); },
+  });
+  await manager.switchTo('demo');
+  await assert.rejects(manager.switchTo('live'), /Port occupied/);
+  assert.equal(manager.current?.mode, 'demo');
+  assert.deepEqual(calls, ['close demo', 'start live']);
+  await manager.close();
+  assert.deepEqual(calls, ['close demo', 'start live', 'close demo']);
+  await assert.rejects(manager.switchTo('invalid'), /Unknown broadcast mode/);
+});
+
+test('mode manager switches successfully with orderly cleanup', async () => {
+  const { createDesktopModes } = await import('../src/modes.js');
+  const calls = [];
+  function factory(mode) {
+    return async () => {
+      calls.push('start ' + mode);
+      return { mode, close: async () => { calls.push('stop ' + mode); } };
+    };
+  }
+  const manager = createDesktopModes({ demo: factory('demo'), live: factory('live') });
+  await manager.switchTo('demo');
+  await manager.switchTo('live');
+  assert.equal(manager.current.mode, 'live');
+  await manager.close();
+  assert.deepEqual(calls, ['start demo', 'stop demo', 'start live', 'stop live']);
+});

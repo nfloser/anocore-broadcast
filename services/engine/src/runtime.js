@@ -59,7 +59,7 @@ export function createBroadcastRuntime({
   const receiver = createGsiServer(ingest, { host, port });
   return {
     listen: receiver.listen,
-    close: () => new Promise((resolve, reject) => {
+    close: () => !receiver.server.listening ? Promise.resolve() : new Promise((resolve, reject) => {
       receiver.server.close(error => error ? reject(error) : resolve());
     }),
     view: (at) => timeline.view(at),

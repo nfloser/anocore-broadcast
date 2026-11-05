@@ -33,6 +33,7 @@ test('restart replays confirmed snapshots and continues source-local sequences',
   const path = tmp(t);
   const time = { value: 1000 };
   const first = await launch(path, time);
+  t.after(() => first.runtime.close());
   assert.equal((await send(first.url, 1)).status, 202);
   assert.equal((await send(first.url, 2)).status, 202);
   await first.runtime.close();
@@ -74,6 +75,7 @@ test('journal limit fails the HTTP write without changing engine sequence', asyn
   const path = tmp(t);
   const time = { value: 1000 };
   const { runtime, url } = await launch(path, time);
+  t.after(() => runtime.close());
   t.after(() => runtime.close());
   assert.equal((await send(url, 1)).status, 202);
   const firstLength = readFileSync(path).length;

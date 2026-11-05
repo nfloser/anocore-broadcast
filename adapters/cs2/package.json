@@ -1,0 +1,8 @@
+{
+  "name": "@anocore-broadcast/cs2",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "engines": {"node": ">=22"},
+  "exports": "./src/index.js"
+}

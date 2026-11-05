@@ -88,3 +88,12 @@ test('rejects negative delay and malformed engine options', () => {
   assert.throws(() => createMatchTimeline({ matchId: 'match-1', staleAfterMs: 0 }));
   assert.throws(() => createMatchTimeline({ matchId: '' }));
 });
+
+test('rejects repeated event IDs while events are still buffered', () => {
+  const engine = createMatchTimeline({ matchId: 'match-1' });
+  assert.equal(engine.ingest(packet(3)).status, 'buffered');
+  assert.equal(engine.ingest({ ...packet(2), eventId: 'observer-1:3' }).status, 'duplicate');
+  assert.equal(engine.ingest(packet(2)).status, 'buffered');
+  assert.equal(engine.ingest(packet(1)).status, 'accepted');
+  assert.equal(engine.stats().eventCount, 3);
+});

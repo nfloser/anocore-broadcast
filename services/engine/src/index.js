@@ -50,7 +50,6 @@ export function createMatchTimeline({
 
   const sources = new Map();
   const history = [];
-  let latestObservedNow = 0;
 
   function source(id) {
     if (!sources.has(id)) sources.set(id, {
@@ -68,7 +67,8 @@ export function createMatchTimeline({
     const current = sources.get(event.sourceId);
     if (current?.acceptedIds.has(event.eventId) ||
         (current && event.sequence <= current.lastSequence) ||
-        current?.pending.has(event.sequence)) {
+        current?.pending.has(event.sequence) ||
+        (current && [...current.pending.values()].some(item => item.eventId === event.eventId))) {
       return { status: 'duplicate' };
     }
     const state = current ?? source(event.sourceId);

@@ -56,6 +56,7 @@ test('rejects missing, misleading or symlinked CS2 installations', t => {
   const cfg = install(installed);
   writeFileSync(join(installed, 'steamapps', 'appmanifest_730.acf'), '"appid" "123"');
   assert.equal(isSafeCs2ConfigDirectory(cfg), false);
+  writeFileSync(join(installed, 'steamapps', 'appmanifest_730.acf'), '"appid" "730"');
   const linkRoot = join(root, 'symlink-library');
   symlinkSync(installed, linkRoot, process.platform === 'win32' ? 'junction' : 'dir');
   assert.deepEqual(discoverCs2ConfigDirectories({ env: {}, additionalSteamRoots: [linkRoot] }), []);

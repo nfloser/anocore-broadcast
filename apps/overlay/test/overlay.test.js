@@ -21,6 +21,7 @@ test('public projection removes player info, source IDs and arbitrary extra payl
   assert.deepEqual(projected, {
     status: 'live', map: 'de_inferno', mapPhase: null,
     round: 5, ctScore: 3, tScore: 2, roundPhase: null, bombState: null,
+    countdownPhase: null, countdownSeconds: null,
     players: [],
   });
   assert.ok(!JSON.stringify(projected).includes('SECRET'));
@@ -164,4 +165,48 @@ test('weapon fields survive HTTP-to-OBS and are removed when data becomes stale'
   assert.equal(JSON.stringify(live).includes('76561198000000123'), false);
   now = 2001;
   assert.deepEqual(await (await fetch(api)).json(), { status: 'unavailable' });
+});
+
+test('reported countdown remains numeric and disappears on stale observer state', () => {
+  const state = createPublicScoreboard({
+    freshness: { observer: { status: 'live' } },
+    snapshots: { observer: { phaseCountdown: {
+      phase: 'live', seconds: 95.4, secret: 'private',
+    } } },
+  });
+  assert.equal(state.countdownSeconds, 95.4);
+  assert.equal(state.countdownPhase, 'live');
+  assert.equal(JSON.stringify(state).includes('private'), false);
+  assert.deepEqual(createPublicScoreboard({
+    freshness: { observer: { status: 'stale' } },
+    snapshots: { observer: { phaseCountdown: { seconds: 10 } } },
+  }), { status: 'unavailable' });
+  const missing = createPublicScoreboard({
+    freshness: { observer: { status: 'live' } },
+    snapshots: { observer: {} },
+  });
+  assert.equal(missing.countdownSeconds, null);
+});
+
+test('GSI phase timer reaches read-only OBS API through the real HTTP path', async t => {
+  let now = 1000;
+  const runtime = createBroadcastRuntime({
+    matchId: 'phase-match', token, port: 0, clock: () => now, staleAfterMs: 1000,
+  });
+  const receiver = await runtime.listen();
+  t.after(() => runtime.close());
+  const overlay = createOverlayServer({ port: 0,
+    scoreboard: () => createPublicScoreboard(runtime.view()) });
+  const observer = await overlay.listen();
+  t.after(() => overlay.close());
+  const raw = fixture(8);
+  raw.phase_countdowns = { phase: 'freezetime', phase_ends_in: 12.5 };
+  assert.equal((await fetch('http://127.0.0.1:' + receiver.port + '/gsi', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(raw),
+  })).status, 202);
+  const endpoint = 'http://127.0.0.1:' + observer.port + '/api/state';
+  assert.equal((await (await fetch(endpoint)).json()).countdownSeconds, 12.5);
+  now = 2001;
+  assert.deepEqual(await (await fetch(endpoint)).json(), { status: 'unavailable' });
 });

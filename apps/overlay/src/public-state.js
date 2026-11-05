@@ -5,6 +5,9 @@
 function score(value) {
   return Number.isSafeInteger(value) && value >= 0 && value <= 999 ? value : null;
 }
+function cash(value) {
+  return Number.isSafeInteger(value) && value >= 0 && value <= 100000 ? value : null;
+}
 function label(value, max = 48) {
   return typeof value === 'string' && value.length <= max && /^[a-zA-Z0-9_ -]+$/.test(value) ? value : null;
 }
@@ -30,7 +33,7 @@ export function createPublicScoreboard(timelineView) {
         name: typeof player.name === 'string' ? player.name.slice(0, 40) : 'Player',
         health: score(player.health),
         armor: score(player.armor),
-        money: score(player.money),
+        money: cash(player.money),
         kills: score(player.kills),
         assists: score(player.assists),
         deaths: score(player.deaths),

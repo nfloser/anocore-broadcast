@@ -49,14 +49,30 @@ export async function startDesktopDemo({
     const hud = await overlay.listen();
     async function update() {
       if (stopped) return;
-      const response = await fetch('http://127.0.0.1:' + receiver.port + '/gsi', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(createDemoFrame(seq++, token)),
-      });
-      if (response.status !== 202) {
-        throw new Error('Demo ingestion failed with HTTP ' + response.status);
+      const body = JSON.stringify(createDemoFrame(seq, token));
+      let lastError;
+      // The local receiver can reopen on the same port immediately after a
+      // Live -> Demo switch. A pooled HTTP socket may be stale on the first
+      // attempt even though the new server is listening. Retry only briefly.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (stopped) return;
+        try {
+          const response = await fetch('http://127.0.0.1:' + receiver.port + '/gsi', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', connection: 'close' },
+            body,
+          });
+          if (response.status !== 202) {
+            throw new Error('Demo ingestion failed with HTTP ' + response.status);
+          }
+          seq++;
+          return;
+        } catch (error) {
+          lastError = error;
+          if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 50));
+        }
       }
+      throw lastError;
     }
     await update();
     timer = setInterval(() => {
@@ -68,7 +84,9 @@ export async function startDesktopDemo({
       });
     }, intervalMs);
     return {
+      mode: 'demo',
       hudUrl: 'http://127.0.0.1:' + hud.port + '/',
+      getStatus: () => ({ mode: 'demo', connection: 'synthetic', ageMs: null }),
       getSettings: () => settings.get(),
       updateSettings: changes => settings.update(changes),
       async close() {

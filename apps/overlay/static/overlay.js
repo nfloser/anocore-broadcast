@@ -1,7 +1,7 @@
 const elements = Object.fromEntries([
   'board', 'ct-score', 't-score', 'map', 'round', 'phase', 'notice',
   'roster', 'ct-players', 't-players', 'roster-notice', 'demo-mark',
-  'ct-name', 't-name', 'ct-roster-name', 't-roster-name',
+  'ct-name', 't-name', 'ct-roster-name', 't-roster-name', 'reported-timer',
 ].map(id => [id, document.getElementById(id)]));
 
 function display(value, fallback = '—') {
@@ -52,6 +52,11 @@ function render(state) {
     'ROUND ' + state.round : 'WAITING FOR DATA';
   elements.phase.textContent = live ?
     [state.mapPhase, state.roundPhase, state.bombState].filter(Boolean).join(' · ').toUpperCase() : '';
+  const reportedSeconds = live && typeof state.countdownSeconds === 'number' &&
+    Number.isFinite(state.countdownSeconds) ? state.countdownSeconds : null;
+  elements['reported-timer'].textContent = reportedSeconds === null ?
+    '' : 'GSI TIMER · ' + Math.floor(reportedSeconds / 60) + ':' +
+    String(Math.floor(reportedSeconds % 60)).padStart(2, '0');
   elements.notice.textContent = live ? '' :
     state?.status === 'ambiguous' ? 'MULTIPLE OBSERVERS — SOURCE SELECTION REQUIRED' : 'LIVE DATA UNAVAILABLE';
   elements.notice.hidden = live;

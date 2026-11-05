@@ -39,6 +39,7 @@ export function createDemoFrame(step, token) {
       team_ct: { score: 5 + Math.floor(round / 2) },
       team_t: { score: 4 + Math.floor((round - 1) / 2) } },
     round: { phase: step % 10 < 2 ? 'freezetime' : 'live' },
+    phase_countdowns: { phase: step % 10 < 2 ? 'freezetime' : 'live', phase_ends_in: Math.max(0, 115 - (step % 10) * 10) },
     allplayers,
   };
 }

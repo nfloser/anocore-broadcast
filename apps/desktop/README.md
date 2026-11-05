@@ -28,6 +28,12 @@ The OBS Browser Source URL remains `http://127.0.0.1:3009/`, copied via the Broa
 
 The `Windows desktop preview` GitHub Actions workflow packages an unsigned x64 portable Electron executable and publishes its SHA-256 checksum as a workflow artifact. It is a test artifact, **not** a signed/released/production-ready installation. Preview artifacts must be independently tested on an actual clean Windows machine; security prompts may appear for unsigned binaries.
 
+## Windows packaged runtime smoke test
+
+The Windows CI workflow now launches the **packaged unpacked Electron executable** from `dist/win-unpacked` (the same packaged application image used for the portable EXE), waits for the loopback OBS HTML and sanitized synthetic 5v5 JSON to become available, requests normal main-window shutdown, verifies that both local ports are released, and repeats startup/shutdown to catch restart regressions. The smoke-test executable includes its own Electron runtime; it does not rely on a system Node installation at runtime. On failure, the CI job fails before publishing a preview artifact.
+
+This is a **Windows CI-runner check only**, not a hands-on clean-PC Windows or Defender test and not proof that real CS2/GOTV observer data is correctly presented.
+
 ## Still required for Issue #41
 
-A completed setup wizard, automatic CS2 folder discovery, actual observer validation, robust match lifecycle, clean Windows x64 smoke test, signed installer, updates, release process, and measured video/GOTV synchronization. None of those are implied by the desktop demo shell.
+A completed setup wizard, automatic CS2 folder discovery, actual observer validation, robust match lifecycle, clean-machine Windows x64 user acceptance, signed installer, updates, release process, and measured video/GOTV synchronization. None of those are implied by the desktop demo shell.

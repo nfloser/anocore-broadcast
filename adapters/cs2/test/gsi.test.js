@@ -125,3 +125,38 @@ test('accepts CS2 GSI compatibility provider name still used by the game', () =>
   raw.provider.name = 'Counter-Strike: Global Offensive';
   assert.equal(normalizeGsiSnapshot(raw).provider.name, raw.provider.name);
 });
+
+test('normalizes equipped GSI weapon and available grenades safely', () => {
+  const raw = fixture();
+  raw.allplayers = {
+    '76561198000000001': {
+      team: 'CT', name: 'Sniper',
+      weapons: {
+        0: { name: 'weapon_awp', type: 'SniperRifle', state: 'active', ammo_clip: 7 },
+        1: { name: 'weapon_flashbang', type: 'Grenade', state: 'holstered' },
+        2: { name: 'weapon_smokegrenade', type: 'Grenade', state: 'holstered' },
+        3: { name: '<script>', type: 'Grenade', state: 'active' },
+      },
+    },
+    '76561198000000002': { team: 'T', name: 'No weapons' },
+  };
+  const result = normalizeGsiSnapshot(raw);
+  assert.equal(result.players[0].activeWeapon, 'weapon_awp');
+  assert.equal(result.players[0].utilityCount, 2);
+  assert.equal(result.players[1].activeWeapon, undefined);
+  assert.equal(result.players[1].utilityCount, undefined);
+  assert.equal(JSON.stringify(result).includes('76561198000000001'), false);
+  assert.equal(JSON.stringify(result).includes('ammo_clip'), false);
+  assert.equal(JSON.stringify(result).includes('<script>'), false);
+});
+
+test('weapon traversal and grenade counts remain bounded', () => {
+  const raw = fixture();
+  raw.allplayers = { one: { team: 'CT', name: 'Utility', weapons: {} } };
+  for (let i = 0; i < 100; i++) {
+    raw.allplayers.one.weapons['slot_' + i] = {
+      name: 'weapon_flashbang', type: 'Grenade', state: 'holstered',
+    };
+  }
+  assert.equal(normalizeGsiSnapshot(raw).players[0].utilityCount, 8);
+});

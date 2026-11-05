@@ -18,6 +18,13 @@ export function createDemoFrame(step, token) {
         health: ((step + i * 3) % 20 === 0) ? 0 : Math.max(15, 100 - ((step * 3 + i * 7) % 75)),
         armor: 100 - (i * 7), money: Math.min(16000, 2500 + i * 730 + step * 40),
       },
+      weapons: {
+        0: { name: 'weapon_knife', type: 'Knife', state: 'holstered' },
+        1: { name: i % 3 === 0 ? 'weapon_awp' : i < 5 ? 'weapon_m4a1' : 'weapon_ak47',
+          type: i % 3 === 0 ? 'SniperRifle' : 'Rifle', state: 'active' },
+        2: { name: 'weapon_flashbang', type: 'Grenade', state: 'holstered' },
+        3: { name: 'weapon_smokegrenade', type: 'Grenade', state: 'holstered' },
+      },
       match_stats: {
         kills: i * 2 + Math.floor(step / 4), assists: i % 4,
         deaths: Math.floor(step / 7) + i % 3,

@@ -111,3 +111,57 @@ test('spectator roster is allowlisted, without Steam IDs or arbitrary weapons', 
     snapshots: { source: { players: [{ name: 'Private', team: 'CT' }] } },
   }), { status: 'unavailable' });
 });
+
+test('public weapon projection never exposes raw weapon objects', () => {
+  const state = createPublicScoreboard({
+    freshness: { observer: { status: 'live' } },
+    snapshots: { observer: { players: [{
+      team: 'CT', name: 'Player', activeWeapon: 'weapon_ak47',
+      utilityCount: 3, inventory: { secret: 'hidden' },
+    }] } },
+  });
+  assert.equal(state.players[0].activeWeapon, 'weapon_ak47');
+  assert.equal(state.players[0].utilityCount, 3);
+  assert.equal(JSON.stringify(state).includes('hidden'), false);
+  const malformed = createPublicScoreboard({
+    freshness: { observer: { status: 'live' } },
+    snapshots: { observer: { players: [{
+      team: 'T', name: 'Player', activeWeapon: 'javascript:alert(1)', utilityCount: 99,
+    }] } },
+  });
+  assert.equal(malformed.players[0].activeWeapon, null);
+  assert.equal(malformed.players[0].utilityCount, null);
+});
+
+test('weapon fields survive HTTP-to-OBS and are removed when data becomes stale', async t => {
+  let now = 1000;
+  const runtime = createBroadcastRuntime({
+    matchId: 'weapons', token, port: 0, clock: () => now, staleAfterMs: 1000,
+  });
+  const receiver = await runtime.listen();
+  t.after(() => runtime.close());
+  const overlay = createOverlayServer({ port: 0,
+    scoreboard: () => createPublicScoreboard(runtime.view()) });
+  const observer = await overlay.listen();
+  t.after(() => overlay.close());
+  const raw = fixture(3);
+  raw.allplayers = { '76561198000000123': {
+    team: 'CT', name: 'Rifle',
+    weapons: {
+      1: { name: 'weapon_m4a1', type: 'Rifle', state: 'active' },
+      2: { name: 'weapon_hegrenade', type: 'Grenade', state: 'holstered' },
+    },
+  } };
+  const response = await fetch('http://127.0.0.1:' + receiver.port + '/gsi', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(raw),
+  });
+  assert.equal(response.status, 202);
+  const api = 'http://127.0.0.1:' + observer.port + '/api/state';
+  const live = await (await fetch(api)).json();
+  assert.equal(live.players[0].activeWeapon, 'weapon_m4a1');
+  assert.equal(live.players[0].utilityCount, 1);
+  assert.equal(JSON.stringify(live).includes('76561198000000123'), false);
+  now = 2001;
+  assert.deepEqual(await (await fetch(api)).json(), { status: 'unavailable' });
+});

@@ -42,6 +42,7 @@ test('restart replays confirmed snapshots and continues source-local sequences',
   const second = await launch(path, time);
   t.after(() => second.runtime.close());
   assert.equal(second.runtime.stats().eventCount, 2);
+  assert.equal(readFileSync(path, 'utf8').trim().split('\n').length, 2);
   assert.equal(second.runtime.view().snapshots['observer-1'], undefined);
   assert.equal(second.runtime.view().freshness['observer-1'].status, 'stale');
   assert.equal(second.runtime.freshness().status, 'waiting');

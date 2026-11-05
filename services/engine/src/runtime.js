@@ -25,9 +25,10 @@ export function createBroadcastRuntime({
   // No file is created unless persistence is explicitly configured.
   const journal = journalPath === undefined ? null :
     createEventJournal({ filePath: journalPath, maxBytes: maxJournalBytes });
+  let recovering = true;
   const timeline = createMatchTimeline({
     matchId, delayMs, staleAfterMs, capacity, clock,
-    onCommit: events => journal?.append(events),
+    onCommit: events => { if (!recovering) journal?.append(events); },
   });
   if (journal) {
     // Strict recovery: any corrupted/truncated record or wrong match aborts
@@ -39,6 +40,8 @@ export function createBroadcastRuntime({
       }
     }
   }
+
+  recovering = false;
 
   const ingest = createGsiIngest({
     matchId, sourceId, token, staleAfterMs, clock,

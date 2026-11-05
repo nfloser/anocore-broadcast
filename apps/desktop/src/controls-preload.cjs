@@ -5,4 +5,5 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('broadcastControls', Object.freeze({
   getSettings: () => ipcRenderer.invoke('broadcast:settings:get'),
   updateSettings: changes => ipcRenderer.invoke('broadcast:settings:update', changes),
+  getStatus: () => ipcRenderer.invoke('broadcast:session:status'),
 }));

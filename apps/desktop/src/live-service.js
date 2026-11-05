@@ -22,7 +22,7 @@ export async function startDesktopLive({
   // Validate config before acquiring any network listener.
   // The auth key remains in this main-process service; the GSI config is
   // available only through its privileged, explicit export command.
-  const gsiConfig = createObserverConfig({ token, port: receiverPort });
+  createObserverConfig({ token, port: receiverPort === 0 ? 3008 : receiverPort });
   const runtime = createBroadcastRuntime({
     matchId, token, port: receiverPort, clock, staleAfterMs,
   });
@@ -30,6 +30,7 @@ export async function startDesktopLive({
   let closed = false;
   try {
     const receiver = await runtime.listen();
+    const gsiConfig = createObserverConfig({ token, port: receiver.port });
     overlay = createOverlayServer({
       port: overlayPort,
       scoreboard: () => {

@@ -274,7 +274,14 @@ async function openDesktop() {
   const settingsPath = join(userData, 'operator-settings.json');
   credentialStore = createObserverCredentialStore({
     filePath: join(userData, 'observer-credential.json'),
-    encryption: safeStorage,
+    // This preview only promises OS-user scoped protection on Windows.
+    // Electron's Linux fallback may be a basic_text backend; never use it.
+    encryption: {
+      isEncryptionAvailable: () =>
+        process.platform === 'win32' && safeStorage.isEncryptionAvailable(),
+      encryptString: value => safeStorage.encryptString(value),
+      decryptString: value => safeStorage.decryptString(value),
+    },
   });
   modeManager = createDesktopModes({
     demo: () => startDesktopDemo({ settingsPath }),

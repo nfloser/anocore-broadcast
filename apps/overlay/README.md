@@ -2,6 +2,10 @@
 
 This is a *minimal working scoreboard*, not a full ten-player broadcast HUD. It reads only the authenticated in-process observer timeline and publishes a tiny, intentionally sanitized view. When observer-only `allplayers_*` data is available, the browser API includes allowlisted player names, health, armor, cash and K/A/D. Steam IDs, weapon inventories, arbitrary fields and credentials are not exposed. This is still sensitive spectator information, so keep the browser source local.
 
+## Preview without CS2
+
+Run `npm run demo` from the repository root. Open `http://127.0.0.1:3009/` in a browser or OBS Browser Source (1920 × 500). The app sends synthetic 5v5 match fixtures through the normal local authenticated GSI receiver and updates approximately every two seconds. A permanent red **DEMO · SYNTHETIC DATA** marker identifies the simulated output. It is not a live CS2 feed. The demo is an operator visual preview and an end-to-end test aid, not broadcast-ready production software.
+
 ## Start locally
 
 1. Install Node.js 22 or later; clone the repository.

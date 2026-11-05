@@ -1,6 +1,6 @@
 const elements = Object.fromEntries([
   'board', 'ct-score', 't-score', 'map', 'round', 'phase', 'notice',
-  'roster', 'ct-players', 't-players', 'roster-notice',
+  'roster', 'ct-players', 't-players', 'roster-notice', 'demo-mark',
 ].map(id => [id, document.getElementById(id)]));
 
 function display(value, fallback = '—') {
@@ -29,6 +29,7 @@ function createPlayerRow(player) {
 }
 
 function render(state) {
+  elements['demo-mark'].hidden = state?.demo !== true;
   const live = state?.status === 'live';
   elements.board.classList.toggle('is-unavailable', !live);
   elements['ct-score'].textContent = live ? display(state.ctScore) : '—';

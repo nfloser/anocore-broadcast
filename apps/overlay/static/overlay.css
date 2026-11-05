@@ -34,3 +34,8 @@ main { width: 100%; padding: 16px 24px; }
 .player-kda { color: #b9c4cf; font-variant-numeric: tabular-nums; text-align: right; }
 .roster-notice { margin: 12px auto; width: max-content; color: #bcc8d6; background: #1a222c; padding: 8px 14px; font-size: 11px; letter-spacing: .09em; }
 @media (max-width: 700px) { .roster { grid-template-columns: 1fr; } .player { grid-template-columns: 1fr 45px 45px 52px; gap: 3px; } }
+
+.demo-mark { width: max-content; margin: 0 auto 8px; padding: 5px 20px;
+  font-size: 15px; font-weight: 900; letter-spacing: .18em; color: #fff;
+  background: #a43232; border: 2px solid #ffc0b6; }
+.demo-mark[hidden] { display: none; }

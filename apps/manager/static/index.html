@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AnoCore Broadcast · Operator</title>
+<link rel="stylesheet" href="/manager.css"><script src="/manager.js" defer></script>
+</head>
+<body>
+<main>
+<header><span class="mark">ANOCORE / BROADCAST</span><h1>Operator controls</h1><p>Local-only configuration for the connected broadcast HUD.</p></header>
+<form id="operator">
+  <section>
+    <label for="token">Operator token</label>
+    <input id="token" type="password" autocomplete="off" required placeholder="Enter the token configured in PowerShell">
+    <p class="hint">Token stays in this browser tab's memory; it is never saved.</p>
+    <button id="connect" type="button">Connect</button>
+  </section>
+  <section>
+    <div class="cols">
+      <div><label for="ctName">CT display name</label><input id="ctName" maxlength="28" required></div>
+      <div><label for="tName">T display name</label><input id="tName" maxlength="28" required></div>
+      <div><label for="ctColor">CT color</label><input id="ctColor" type="color"></div>
+      <div><label for="tColor">T color</label><input id="tColor" type="color"></div>
+    </div>
+    <label class="check"><input id="showRoster" type="checkbox"> Show player rosters in HUD</label>
+    <button id="save" type="submit">Apply to live HUD</button>
+  </section>
+</form>
+<p id="result" role="status" aria-live="polite">Not connected</p>
+<footer>Changes apply immediately, but are not stored across restarts in this version. Remote operators and OBS scene control are not enabled.</footer>
+</main>
+</body>
+</html>

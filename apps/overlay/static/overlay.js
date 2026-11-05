@@ -1,6 +1,7 @@
 const elements = Object.fromEntries([
   'board', 'ct-score', 't-score', 'map', 'round', 'phase', 'notice',
   'roster', 'ct-players', 't-players', 'roster-notice', 'demo-mark',
+  'ct-name', 't-name', 'ct-roster-name', 't-roster-name',
 ].map(id => [id, document.getElementById(id)]));
 
 function display(value, fallback = '—') {
@@ -31,6 +32,15 @@ function createPlayerRow(player) {
 function render(state) {
   if (state?.demo === true) elements['demo-mark'].dataset.demo = 'true';
   elements['demo-mark'].hidden = elements['demo-mark'].dataset.demo !== 'true';
+  const settings = state?.settings;
+  if (settings) {
+    elements['ct-name'].textContent = settings.ctName;
+    elements['ct-roster-name'].textContent = settings.ctName;
+    elements['t-name'].textContent = settings.tName;
+    elements['t-roster-name'].textContent = settings.tName;
+    document.documentElement.style.setProperty('--ct-color', settings.ctColor);
+    document.documentElement.style.setProperty('--t-color', settings.tColor);
+  }
   const live = state?.status === 'live';
   elements.board.classList.toggle('is-unavailable', !live);
   elements['ct-score'].textContent = live ? display(state.ctScore) : '—';
@@ -44,7 +54,7 @@ function render(state) {
     state?.status === 'ambiguous' ? 'MULTIPLE OBSERVERS — SOURCE SELECTION REQUIRED' : 'LIVE DATA UNAVAILABLE';
   elements.notice.hidden = live;
 
-  const players = live && Array.isArray(state.players) ? state.players : [];
+  const players = live && settings?.showRoster !== false && Array.isArray(state.players) ? state.players : [];
   elements.roster.hidden = players.length === 0;
   elements['roster-notice'].hidden = !live || players.length > 0;
   for (const [team, target] of [['CT', 'ct-players'], ['T', 't-players']]) {

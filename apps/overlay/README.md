@@ -23,3 +23,14 @@ Run `npm run demo` from the repository root. Open `http://127.0.0.1:3009/` in a 
 The configured delay is only a local read gate, not verified synchronization with GOTV/OBS video. Observe the source delay before going live. The scoreboard currently shows CT/T side scores, map, round and limited round/bomb status where GSI provides them. It can show basic ten-player panels when spectator data is available, but not verified team identities, exact round clock, radar, all weapons, killfeed, replay or operator controls. Those require further adapters and real CS2 tests.
 
 The scoreboard HTTP server binds **only to localhost** on port 3009, sends no CORS headers and exposes no privileged data. Neither the GSI token nor a public state endpoint should be exposed outside the trusted observer machine. This prototype does not support distributed production yet.
+
+## Local operator manager (early preview)
+
+To enable the operator panel, set a **separate** random `ANOCORE_ADMIN_TOKEN` environment variable (32+ bytes) before running `npm run broadcast`:
+
+```powershell
+$env:ANOCORE_ADMIN_TOKEN="PUT_A_DIFFERENT_RANDOM_32_BYTE_SECRET_HERE"
+npm run broadcast
+```
+
+Open `http://127.0.0.1:3010/`, enter the token and click **Connect**. You can configure CT/T labels, colors and roster visibility. Changes appear in OBS without restarting the receiver. They are currently **in-memory only** and revert after restarting the process. Do not reuse the GSI token as an operator token. The manager is disabled if the environment variable is absent, binds only to loopback and rejects cross-origin writes. Never expose its port outside the observer machine.

@@ -12,12 +12,14 @@ AnoCore Broadcast is a standalone product, not a submodule of the gameserver. An
 - Explicit journal **integrity checkpoints** record SHA-256 digests of committed prefixes and verify them on restart. These are not state snapshots or permission to delete event history. The CLI starts this composed runtime. Tests exercise the complete HTTP-to-engine path.
 - Automated regression tests for malformed, unauthorized, oversized, disconnected/stale, duplicate, reordered and delayed-input cases.
 
-- Loopback-only read-only scoreboard server projects a small allowlisted subset of delayed state to OBS. The expanded read-only projection may include broadcast player names, health, money and stats from spectator GSI; SteamIDs, arbitrary weapons and authentication secrets are not available from its endpoint. It remains loopback-only and must not be exposed to players.\n\n## Planned\n- Type-specific payload schemas, an authenticated read API for approved broadcast operators, and secure runtime lifecycle management.
+- Loopback-only read-only scoreboard server projects a small allowlisted subset of delayed state to OBS. The expanded read-only projection may include broadcast player names, health, money and stats from spectator GSI; SteamIDs, arbitrary weapons and authentication secrets are not available from its endpoint. It remains loopback-only and must not be exposed to players.
+
+## Planned\n- Type-specific payload schemas, an authenticated read API for approved broadcast operators, and secure runtime lifecycle management.
 - Production-grade journal lifecycle: rotation, recovery after partial writes, cross-process locking, bounded memory, and resilience to disk failures. The initial single-process write-ahead journal is optional and experimental.
 - Broadcast clock alignment validated against video and GOTV delay; current time gate alone is insufficient.
 - Round, halftime, overtime, match scoring and team reconciliation across data sources.
 - Full OBS broadcast graphics including players, radar, team names, events and theme editor; only a small CT/T scoreboard exists today.
-- Operator manager, authenticated match setup, themes, scenes and manual overrides.
+- Full operator management including multi-user roles, persisted configuration, tournament match setup, scenes and auditable overrides. An initial token-protected loopback editor for CT/T names, colors and roster visibility exists.
 - Recording/replay: separate capture of video and event markers; no impact on game server.
 
 ## Protocol contract v1

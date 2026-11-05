@@ -122,3 +122,13 @@ body { overflow: auto; }
 @media (prefers-reduced-motion: reduce) {
   .player, .hp-fill, .radar-dot { transition: none; }
 }
+
+/* A live broadcast has no synthetic radar. Let both rosters use the full width. */
+.broadcast-stage.no-radar { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.broadcast-stage.no-radar .ct-roster { grid-column: 1; }
+.broadcast-stage.no-radar .t-roster { grid-column: 2; }
+@media (max-width: 700px) {
+  .broadcast-stage.no-radar { grid-template-columns: 1fr; }
+  .broadcast-stage.no-radar .ct-roster { grid-column: 1; grid-row: 1; }
+  .broadcast-stage.no-radar .t-roster { grid-column: 1; grid-row: 2; }
+}

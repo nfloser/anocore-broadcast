@@ -86,7 +86,10 @@ function render(state) {
     document.documentElement.style.setProperty('--t-color', settings.tColor);
   }
   const live = state?.status === 'live';
-  drawRadar(state?.radar, live && state?.demo === true);
+  const radarVisible = live && state?.demo === true &&
+    state?.radar?.kind === 'synthetic';
+  document.querySelector('.broadcast-stage').classList.toggle('no-radar', !radarVisible);
+  drawRadar(state?.radar, radarVisible);
   elements.board.classList.toggle('is-unavailable', !live);
   elements['ct-score'].textContent = live ? display(state.ctScore) : '—';
   elements['t-score'].textContent = live ? display(state.tScore) : '—';

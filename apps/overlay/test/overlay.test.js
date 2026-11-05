@@ -246,6 +246,8 @@ test('HUD redesign includes the premium stage, health bars and safe synthetic ra
   assert.match(css, /\.hp-meter/);
   assert.match(css, /\.radar-preview/);
   assert.match(css, /prefers-reduced-motion/);
+  assert.match(css, /\.broadcast-stage\.no-radar/);
+  assert.match(js, /classList\.toggle\('no-radar'/);
   assert.match(js, /document\.createElement\('span'\)/);
   assert.match(js, /\.textContent = String\(value\)/);
   assert.doesNotMatch(js, /innerHTML/);

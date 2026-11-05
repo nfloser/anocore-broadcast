@@ -272,3 +272,54 @@ test('desktop shutdown waits for an in-flight mode switch and closes new listene
   assert.deepEqual(calls, ['close demo', 'close live']);
   await assert.rejects(manager.switchTo('demo'), /closed/);
 });
+
+test('real desktop services switch Demo -> Live -> Demo on the same ports', async () => {
+  const { createDesktopModes } = await import('../src/modes.js');
+  const { startDesktopLive } = await import('../src/live-service.js');
+  const { createDemoFrame } = await import('../../overlay/src/demo-fixture.js');
+  const { createServer } = await import('node:net');
+  async function unusedPort() {
+    const server = createServer();
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    const port = server.address().port;
+    await new Promise(resolve => server.close(resolve));
+    return port;
+  }
+  const receiverPort = await unusedPort();
+  const overlayPort = await unusedPort();
+  const key = 'mode-switch-test-secret-0123456789';
+  const modes = createDesktopModes({
+    demo: () => startDesktopDemo({ receiverPort, overlayPort }),
+    live: () => startDesktopLive({ receiverPort, overlayPort, token: key }),
+  });
+  try {
+    const demo = await modes.switchTo('demo');
+    assert.equal(demo.mode, 'demo');
+    const endpoint = demo.hudUrl + 'api/state';
+    const initial = await (await fetch(endpoint)).json();
+    assert.equal(initial.demo, true);
+    assert.equal(initial.radar.kind, 'synthetic');
+
+    const live = await modes.switchTo('live');
+    assert.equal(live.mode, 'live');
+    const waiting = await (await fetch(endpoint)).json();
+    assert.equal(waiting.status, 'unavailable');
+    assert.equal(waiting.demo, undefined);
+    assert.equal(waiting.radar, undefined);
+    assert.equal((await fetch(live.gsiUrl, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(createDemoFrame(1, key)),
+    })).status, 202);
+    const observed = await (await fetch(endpoint)).json();
+    assert.equal(observed.status, 'live');
+    assert.equal(observed.demo, undefined);
+
+    const restored = await modes.switchTo('demo');
+    assert.equal(restored.mode, 'demo');
+    const again = await (await fetch(endpoint)).json();
+    assert.equal(again.demo, true);
+    assert.equal(again.radar.kind, 'synthetic');
+  } finally {
+    await modes.close();
+  }
+});

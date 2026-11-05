@@ -1,4 +1,5 @@
-import { appendFileSync, existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
+import { createHash, randomUUID } from 'node:crypto';
 import { basename, dirname, join, resolve } from 'node:path';
 
 const DEFAULT_MAX_BYTES = 32 * 1024 * 1024;
@@ -23,6 +24,7 @@ export function createEventJournal({
   const path = resolve(filePath);
   const folder = dirname(path);
   const name = basename(path);
+  const checkpointFile = path + '.checkpoint.json';
   const fileFor = index => index === 0 ? path :
     join(folder, `${name}.${String(index).padStart(6, '0')}`);
 
@@ -74,7 +76,48 @@ export function createEventJournal({
     return { events, totalBytes };
   }
 
+  /**
+   * Verify an operator-created integrity checkpoint. Later appends may
+   * extend the last checkpointed segment and create new numbered segments,
+   * but every byte committed before the checkpoint must still match.
+   */
+  function verifyCheckpoint(files) {
+    if (!existsSync(checkpointFile)) return false;
+    let manifest;
+    try {
+      manifest = JSON.parse(readFileSync(checkpointFile, 'utf8'));
+    } catch {
+      throw new Error('Invalid journal integrity checkpoint');
+    }
+    if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest) ||
+        manifest.format !== 1 || !Array.isArray(manifest.segments) ||
+        manifest.segments.length === 0 || manifest.segments.length > files.length ||
+        Object.keys(manifest).sort().join(',') !== 'format,segments') {
+      throw new Error('Invalid journal integrity checkpoint');
+    }
+    let total = 0;
+    for (let i = 0; i < manifest.segments.length; i++) {
+      const entry = manifest.segments[i];
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry) ||
+          Object.keys(entry).sort().join(',') !== 'bytes,index,sha256' ||
+          entry.index !== i || !Number.isSafeInteger(entry.bytes) ||
+          entry.bytes < 1 || typeof entry.sha256 !== 'string' ||
+          !/^[a-f0-9]{64}$/.test(entry.sha256)) {
+        throw new Error('Invalid journal integrity checkpoint');
+      }
+      total += entry.bytes;
+      if (total > maxBytes) throw new Error('Invalid journal integrity checkpoint');
+      const data = readFileSync(files[i]);
+      if (data.length < entry.bytes ||
+          createHash('sha256').update(data.subarray(0, entry.bytes)).digest('hex') !== entry.sha256) {
+        throw new Error('Journal integrity checkpoint mismatch');
+      }
+    }
+    return true;
+  }
+
   const initialFiles = segments();
+  verifyCheckpoint(initialFiles);
   const initial = parseFiles(initialFiles);
   let totalBytes = initial.totalBytes;
   let index = initialFiles.length ? initialFiles.length - 1 : 0;
@@ -114,8 +157,41 @@ export function createEventJournal({
     totalBytes += bytes.length;
   }
 
+  /**
+   * Explicit verification marker, not a state snapshot. It does not
+   * allow history pruning or bypass full journal replay on restart.
+   */
+  function checkpoint() {
+    const files = segments();
+    const parsed = parseFiles(files);
+    if (!parsed.events.length) throw new Error('Cannot checkpoint an empty journal');
+    if (parsed.totalBytes !== totalBytes) {
+      throw new Error('Journal modified by another process');
+    }
+    const manifest = {
+      format: 1,
+      segments: files.map((file, index) => {
+        const data = readFileSync(file);
+        return {
+          index, bytes: data.length,
+          sha256: createHash('sha256').update(data).digest('hex'),
+        };
+      }),
+    };
+    const temporary = checkpointFile + '.' + randomUUID() + '.tmp';
+    try {
+      writeFileSync(temporary, JSON.stringify(manifest) + '\n', {
+        flag: 'wx', mode: 0o600, flush: true,
+      });
+      renameSync(temporary, checkpointFile);
+    } finally {
+      if (existsSync(temporary)) unlinkSync(temporary);
+    }
+    return { segments: manifest.segments.length, totalBytes };
+  }
+
   function stats() {
     return { totalBytes, maxBytes, segmentBytes, segmentCount: index + 1 };
   }
-  return { read, append, stats };
+  return { read, append, stats, checkpoint };
 }

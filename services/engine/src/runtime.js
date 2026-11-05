@@ -66,5 +66,9 @@ export function createBroadcastRuntime({
     stats: () => timeline.stats(),
     freshness: () => ingest.freshness(),
     journalEnabled: journal !== null,
+    checkpoint: () => {
+      if (!journal) throw new Error('Journal is disabled');
+      return journal.checkpoint();
+    },
   };
 }

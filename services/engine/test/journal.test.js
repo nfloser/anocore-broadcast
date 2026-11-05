@@ -175,3 +175,58 @@ test('fails closed when a middle numbered segment is missing', t => {
   unlinkSync(path + '.000002');
   assert.throws(() => createEventJournal({ filePath: path, segmentBytes: 140 }), /gap/);
 });
+
+test('integrity checkpoint survives appends, rotation and restart', t => {
+  const path = tmp(t);
+  const journal = createEventJournal({ filePath: path, segmentBytes: 140, maxBytes: 3000 });
+  for (let i = 1; i <= 4; i++) {
+    journal.append([{ sequence: i, payload: 'value'.repeat(8) }]);
+  }
+  assert.ok(journal.checkpoint().segments >= 2);
+  for (let i = 5; i <= 8; i++) {
+    journal.append([{ sequence: i, payload: 'value'.repeat(8) }]);
+  }
+  const recovered = createEventJournal({ filePath: path, segmentBytes: 140, maxBytes: 3000 });
+  assert.deepEqual(recovered.read().map(event => event.sequence),
+    [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.ok(recovered.checkpoint().segments >= 3);
+});
+
+test('same-length tampering of an earlier segment fails checkpoint validation', t => {
+  const path = tmp(t);
+  const journal = createEventJournal({ filePath: path, segmentBytes: 140 });
+  for (let i = 1; i <= 5; i++) {
+    journal.append([{ sequence: i, payload: 'value'.repeat(8) }]);
+  }
+  journal.checkpoint();
+  const content = readFileSync(path, 'utf8');
+  writeFileSync(path, content.replace('"sequence":1', '"sequence":9'));
+  assert.throws(() => createEventJournal({ filePath: path, segmentBytes: 140 }),
+    /integrity checkpoint mismatch/);
+});
+
+test('invalid and truncated checkpoint manifests abort startup', t => {
+  const path = tmp(t);
+  const journal = createEventJournal({ filePath: path });
+  journal.append([{ sequence: 1 }]);
+  journal.checkpoint();
+  writeFileSync(path + '.checkpoint.json', '{"format":1');
+  assert.throws(() => createEventJournal({ filePath: path }),
+    /Invalid journal integrity checkpoint/);
+  writeFileSync(path + '.checkpoint.json', JSON.stringify({
+    format: 1, segments: [{ index: 0, bytes: 100, sha256: 'a'.repeat(64) }],
+  }));
+  assert.throws(() => createEventJournal({ filePath: path }),
+    /integrity checkpoint mismatch/);
+});
+
+test('checkpoint requires committed events and never stores GSI secrets', t => {
+  const path = tmp(t);
+  const journal = createEventJournal({ filePath: path });
+  assert.throws(() => journal.checkpoint(), /empty journal/);
+  journal.append([{ sequence: 1, matchId: 'match-1' }]);
+  journal.checkpoint();
+  const manifest = JSON.parse(readFileSync(path + '.checkpoint.json', 'utf8'));
+  assert.equal(manifest.format, 1);
+  assert.equal(JSON.stringify(manifest).includes(secret), false);
+});

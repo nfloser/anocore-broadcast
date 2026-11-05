@@ -19,6 +19,10 @@ Independent CS2 broadcast production suite. The goal is a configurable and relia
 - `apps/overlay` — redesigned local OBS HUD with allowlisted spectator roster and demo-only synthetic radar (**initial implementation**).
 - `apps/manager` — first authenticated local operator controls for team labels, colors and roster visibility (**implemented; optional local persistence**).
 
+## Windows desktop preview
+
+An early Electron desktop shell starts a fully synthetic HUD with a single click and stops its local GSI/HUD servers when closed. It is **not yet** a live production application. See [Windows desktop preview](apps/desktop/README.md) for `npm run desktop`, unsigned CI artifacts and limitations. A tested, signed Windows release remains tracked in Issue #41.
+
 ## Quick preview
 
 Run `npm run demo`, then open `http://127.0.0.1:3009/`. The viewer visibly marks the generated content as **DEMO** and runs entirely on localhost. Set `ANOCORE_ADMIN_TOKEN` (32+ bytes) first to use the local Operator Manager with the demo at `http://127.0.0.1:3010/`. For real CS2 ingest see the [OBS quickstart](apps/overlay/README.md).

@@ -2,6 +2,7 @@ const elements = Object.fromEntries([
   'board', 'ct-score', 't-score', 'map', 'round', 'phase', 'notice',
   'roster', 'ct-players', 't-players', 'roster-notice', 'demo-mark',
   'ct-name', 't-name', 'ct-roster-name', 't-roster-name', 'reported-timer',
+  'radar-preview', 'radar-grid', 'radar-markers', 'radar-warning',
 ].map(id => [id, document.getElementById(id)]));
 
 function display(value, fallback = '—') {
@@ -31,6 +32,36 @@ function createPlayerRow(player) {
   return row;
 }
 
+function drawRadar(radar, allowed) {
+  const markers = Array.isArray(radar?.markers) ? radar.markers : [];
+  if (!allowed || radar?.kind !== 'synthetic') {
+    elements['radar-preview'].hidden = true;
+    elements['radar-markers'].replaceChildren();
+    return;
+  }
+  elements['radar-preview'].hidden = false;
+  elements['radar-warning'].textContent = 'NOT A REAL MAP · DEMO ONLY';
+  const dots = [];
+  for (const marker of markers.slice(0, 10)) {
+    if (!marker || !['CT', 'T'].includes(marker.team) ||
+        !Number.isFinite(marker.x) || !Number.isFinite(marker.y) ||
+        marker.x < 0 || marker.x > 1 || marker.y < 0 || marker.y > 1) continue;
+    const dot = document.createElement('span');
+    dot.className = 'radar-dot ' + (marker.team === 'CT' ? 'radar-ct' : 'radar-t');
+    dot.classList.toggle('radar-dead', marker.alive === false);
+    dot.style.left = (marker.x * 100) + '%';
+    dot.style.top = (marker.y * 100) + '%';
+    const title = typeof marker.label === 'string' ? marker.label.slice(0, 12) : 'Player';
+    dot.title = title;
+    dot.textContent = marker.team === 'CT' ? 'C' : 'T';
+    if (typeof marker.heading === 'number' && Number.isFinite(marker.heading)) {
+      dot.style.setProperty('--direction', marker.heading + 'rad');
+    }
+    dots.push(dot);
+  }
+  elements['radar-markers'].replaceChildren(...dots);
+}
+
 function render(state) {
   if (state?.demo === true) elements['demo-mark'].dataset.demo = 'true';
   elements['demo-mark'].hidden = elements['demo-mark'].dataset.demo !== 'true';
@@ -44,6 +75,7 @@ function render(state) {
     document.documentElement.style.setProperty('--t-color', settings.tColor);
   }
   const live = state?.status === 'live';
+  drawRadar(state?.radar, live && state?.demo === true);
   elements.board.classList.toggle('is-unavailable', !live);
   elements['ct-score'].textContent = live ? display(state.ctScore) : '—';
   elements['t-score'].textContent = live ? display(state.tScore) : '—';

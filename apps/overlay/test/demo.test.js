@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createDemoFrame } from '../src/demo-fixture.js';
+import { createDemoRadar } from '../src/demo-radar.js';
 import { normalizeGsiSnapshot } from '../../../adapters/cs2/src/index.js';
 import { createBroadcastRuntime } from '../../../services/engine/src/runtime.js';
 import { createPublicScoreboard } from '../src/public-state.js';
@@ -20,6 +21,7 @@ test('demo fixture is deterministic, has ten players and no real steam credentia
   assert.equal(payload.phaseCountdown.seconds, 85);
   assert.equal(payload.players[0].activeWeapon, 'weapon_awp');
   assert.equal(payload.players[0].utilityCount, 2);
+  assert.equal(payload.players[0].position.length, 3);
   assert.throws(() => createDemoFrame(-1, 'x'));
 });
 
@@ -98,4 +100,49 @@ test('demo operator settings update rendered fixture state without removing DEMO
   assert.equal(after.settings.ctName, 'Demo Team');
   assert.deepEqual(after.players, []);
   assert.equal(JSON.stringify(after).includes(adminToken), false);
+});
+
+test('only the synthetic demo projection supplies bounded radar markers', () => {
+  const raw = createDemoFrame(3, 'fixture-secret');
+  const snapshot = normalizeGsiSnapshot(raw);
+  const view = {
+    freshness: { observer: { status: 'live' } },
+    snapshots: { observer: snapshot },
+  };
+  const result = createDemoRadar(view);
+  assert.equal(result.kind, 'synthetic');
+  assert.equal(result.markers.length, 10);
+  assert.ok(result.markers.every(marker =>
+    marker.x >= 0 && marker.x <= 1 && marker.y >= 0 && marker.y <= 1));
+  assert.ok(result.markers.every(marker =>
+    !Object.hasOwn(marker, 'position') && !Object.hasOwn(marker, 'forward')));
+  assert.ok(!JSON.stringify(result).includes('765611980'));
+  const publicState = createPublicScoreboard(view);
+  assert.equal(Object.hasOwn(publicState, 'radar'), false);
+  assert.equal(JSON.stringify(publicState).includes('position'), false);
+});
+
+test('demo radar rejects stale snapshots, ambiguous sources and wrong map', () => {
+  const snapshot = normalizeGsiSnapshot(createDemoFrame(3, 'fixture-secret'));
+  const one = { freshness: { observer: { status: 'stale' } },
+    snapshots: { observer: snapshot } };
+  assert.equal(createDemoRadar(one), null);
+  one.freshness.observer.status = 'live';
+  one.freshness.second = { status: 'live' };
+  one.snapshots.second = snapshot;
+  assert.equal(createDemoRadar(one), null);
+  delete one.freshness.second;
+  delete one.snapshots.second;
+  one.snapshots.observer.map.name = 'de_inferno';
+  assert.equal(createDemoRadar(one), null);
+});
+
+test('synthetic radar excludes out-of-bounds players instead of clamping markers', () => {
+  const snapshot = normalizeGsiSnapshot(createDemoFrame(3, 'fixture-secret'));
+  snapshot.players[0].position = [2000, 2000, 0];
+  const result = createDemoRadar({
+    freshness: { observer: { status: 'live' } },
+    snapshots: { observer: snapshot },
+  });
+  assert.equal(result.markers.length, 9);
 });

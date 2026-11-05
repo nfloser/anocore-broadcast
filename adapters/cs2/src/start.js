@@ -14,7 +14,9 @@ const runtime = createBroadcastRuntime({
 });
 const address = await runtime.listen();
 process.stdout.write(`GSI receiver and timeline listening on ${address.address}:${address.port}; run id ${randomUUID()}\n`);
-const settings = createBroadcastSettings();
+const settings = createBroadcastSettings({
+  filePath: process.env.ANOCORE_MANAGER_CONFIG_PATH || undefined,
+});
 const overlay = createOverlayServer({
   scoreboard: () => {
     const snapshot = createPublicScoreboard(runtime.view());

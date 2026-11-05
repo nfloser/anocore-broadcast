@@ -17,7 +17,7 @@ Independent CS2 broadcast production suite. The goal is a configurable and relia
 - `services/engine` — HTTP-to-engine pipeline, in-memory event ordering, optional journal recovery, gap detection, delayed snapshot reads (**partially implemented**).
 - `adapters/anocore` — optional AnoCore/MatchZy integration (**planned**).
 - `apps/overlay` — initial OBS HUD with an allowlisted spectator roster (**initial implementation**).
-- `apps/manager` — first authenticated local operator controls for team labels, colors and roster visibility (**implemented, non-persistent**).
+- `apps/manager` — first authenticated local operator controls for team labels, colors and roster visibility (**implemented; optional local persistence**).
 
 ## Quick preview
 

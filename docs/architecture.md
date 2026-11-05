@@ -19,7 +19,7 @@ AnoCore Broadcast is a standalone product, not a submodule of the gameserver. An
 - Broadcast clock alignment validated against video and GOTV delay; current time gate alone is insufficient.
 - Round, halftime, overtime, match scoring and team reconciliation across data sources.
 - Full OBS broadcast graphics including players, radar, team names, events and theme editor; only a small CT/T scoreboard exists today.
-- Full operator management including multi-user roles, persisted configuration, tournament match setup, scenes and auditable overrides. An initial token-protected loopback editor for CT/T names, colors and roster visibility exists.
+- Full operator management including multi-user roles, persisted configuration, tournament match setup, scenes and auditable overrides. An initial token-protected loopback editor for CT/T names, colors and roster visibility exists, with optional atomic local persistence of validated display settings (no credentials).
 - Recording/replay: separate capture of video and event markers; no impact on game server.
 
 ## Protocol contract v1

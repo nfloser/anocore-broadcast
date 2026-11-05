@@ -68,7 +68,9 @@ export async function startDesktopDemo({
       });
     }, intervalMs);
     return {
+      mode: 'demo',
       hudUrl: 'http://127.0.0.1:' + hud.port + '/',
+      getStatus: () => ({ mode: 'demo', connection: 'synthetic', ageMs: null }),
       getSettings: () => settings.get(),
       updateSettings: changes => settings.update(changes),
       async close() {

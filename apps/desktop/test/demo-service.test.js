@@ -7,6 +7,8 @@ import { join } from 'node:path';
 
 test('desktop demo drives the existing GSI/engine/HUD pipeline and cleans up', async () => {
   const started = await startDesktopDemo({ receiverPort: 0, overlayPort: 0, intervalMs: 250 });
+  assert.equal(started.mode, 'demo');
+  assert.deepEqual(started.getStatus(), { mode: 'demo', connection: 'synthetic', ageMs: null });
   const stateUrl = started.hudUrl + 'api/state';
   try {
     const response = await fetch(stateUrl);

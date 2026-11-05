@@ -17,7 +17,68 @@ function createPlayerRow(player) {
     ['player-health', player.health === null ? 'HP —' : 'HP ' + player.health],
     ['player-kda', [player.kills, player.assists, player.deaths]
       .map(number => number === null ? '—' : number).join('/')],
-    ['player-economy', player.money === null ? '—' : '$' + player.money],
+    ['player-economy', player.money === null ? '—' : '
+  ];
+  for (const [className, value] of fields) {
+    const element = document.createElement('span');
+    element.className = className;
+    // Text-only rendering: player names never become HTML or script.
+    element.textContent = String(value);
+    row.append(element);
+  }
+  return row;
+}
+
+function render(state) {
+  if (state?.demo === true) elements['demo-mark'].dataset.demo = 'true';
+  elements['demo-mark'].hidden = elements['demo-mark'].dataset.demo !== 'true';
+  const settings = state?.settings;
+  if (settings) {
+    elements['ct-name'].textContent = settings.ctName;
+    elements['ct-roster-name'].textContent = settings.ctName;
+    elements['t-name'].textContent = settings.tName;
+    elements['t-roster-name'].textContent = settings.tName;
+    document.documentElement.style.setProperty('--ct-color', settings.ctColor);
+    document.documentElement.style.setProperty('--t-color', settings.tColor);
+  }
+  const live = state?.status === 'live';
+  elements.board.classList.toggle('is-unavailable', !live);
+  elements['ct-score'].textContent = live ? display(state.ctScore) : '—';
+  elements['t-score'].textContent = live ? display(state.tScore) : '—';
+  elements.map.textContent = live ? display(state.map, 'UNKNOWN MAP') : 'NO LIVE MATCH';
+  elements.round.textContent = live && state.round !== null ?
+    'ROUND ' + state.round : 'WAITING FOR DATA';
+  elements.phase.textContent = live ?
+    [state.mapPhase, state.roundPhase, state.bombState].filter(Boolean).join(' · ').toUpperCase() : '';
+  elements.notice.textContent = live ? '' :
+    state?.status === 'ambiguous' ? 'MULTIPLE OBSERVERS — SOURCE SELECTION REQUIRED' : 'LIVE DATA UNAVAILABLE';
+  elements.notice.hidden = live;
+
+  const players = live && settings?.showRoster !== false && Array.isArray(state.players) ? state.players : [];
+  elements.roster.hidden = players.length === 0;
+  elements['roster-notice'].hidden = !live || players.length > 0;
+  for (const [team, target] of [['CT', 'ct-players'], ['T', 't-players']]) {
+    const rows = players.filter(player => player.team === team)
+      .slice(0, 5).map(createPlayerRow);
+    elements[target].replaceChildren(...rows);
+  }
+}
+
+async function refresh() {
+  try {
+    const response = await fetch('/api/state', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Data unavailable');
+    render(await response.json());
+  } catch {
+    render({ status: 'unavailable' });
+  }
+}
+refresh();
+setInterval(refresh, 500);
+ + player.money],
+    ['player-weapon', player.activeWeapon ?
+      player.activeWeapon.replace(/^weapon_/, '').replaceAll('_', ' ').toUpperCase() : 'WEAPON —'],
+    ['player-utility', player.utilityCount == null ? 'UTIL —' : 'UTIL ' + player.utilityCount],
   ];
   for (const [className, value] of fields) {
     const element = document.createElement('span');

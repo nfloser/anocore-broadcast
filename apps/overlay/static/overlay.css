@@ -26,14 +26,16 @@ main { width: 100%; padding: 16px 24px; }
 .t-roster { border-top: 3px solid var(--t-color, #dcbb5b); }
 .roster-side h2 { margin: 0 0 8px; color: #bcc8d6; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
 .player-list { display: grid; gap: 4px; }
-.player { display: grid; grid-template-columns: 1fr 60px 64px 70px; align-items: center; gap: 8px; padding: 7px 10px; background: #1d2631; font-size: 12px; }
+.player { display: grid; grid-template-columns: 1fr 56px 64px 70px 120px 58px; align-items: center; gap: 8px; padding: 7px 10px; background: #1d2631; font-size: 12px; }
 .player.dead { opacity: .52; }
 .player-name { font-size: 13px; font-weight: 750; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .player-health { color: #b5d7ae; }
 .player-economy { color: #e9d49b; text-align: right; }
+.player-weapon { color: #d2dce7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.player-utility { color: #9cbcd0; text-align: right; }
 .player-kda { color: #b9c4cf; font-variant-numeric: tabular-nums; text-align: right; }
 .roster-notice { margin: 12px auto; width: max-content; color: #bcc8d6; background: #1a222c; padding: 8px 14px; font-size: 11px; letter-spacing: .09em; }
-@media (max-width: 700px) { .roster { grid-template-columns: 1fr; } .player { grid-template-columns: 1fr 45px 45px 52px; gap: 3px; } }
+@media (max-width: 700px) { .roster { grid-template-columns: 1fr; } .player { grid-template-columns: 1fr 45px 45px 52px 70px 45px; gap: 3px; } }
 
 .demo-mark { width: max-content; margin: 0 auto 8px; padding: 5px 20px;
   font-size: 15px; font-weight: 900; letter-spacing: .18em; color: #fff;

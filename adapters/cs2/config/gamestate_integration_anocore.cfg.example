@@ -20,5 +20,6 @@
     "allplayers_id" "1"
     "allplayers_state" "1"
     "allplayers_match_stats" "1"
+    "allplayers_weapons" "1"
   }
 }

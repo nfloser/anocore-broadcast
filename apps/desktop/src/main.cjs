@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, Menu, clipboard, dialog, session, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, clipboard, dialog, session, ipcMain, safeStorage } = require('electron');
 const { pathToFileURL } = require('node:url');
 const { join } = require('node:path');
 const { mkdirSync } = require('node:fs');
@@ -7,6 +7,7 @@ const { mkdirSync } = require('node:fs');
 let window = null;
 let controlsWindow = null;
 let modeManager = null;
+let credentialStore = null;
 let shutdownStarted = false;
 let switching = false;
 const controlsPath = join(__dirname, 'controls.html');
@@ -141,11 +142,37 @@ async function exportGsiConfig() {
     dialog.showMessageBoxSync(window, {
       type: 'info',
       message: 'CS2 observer configuration saved.',
-      detail: "Place the CFG in Counter-Strike 2's game/csgo/cfg directory, then restart CS2. Keep it private. A new Live session generates a new key and needs a new CFG.",
+      detail: "Place the CFG in Counter-Strike 2's game/csgo/cfg directory, then restart CS2. Keep it private. The same Windows user retains this key across normal restarts. Only an explicit reset requires a replacement CFG.",
     });
   } catch {
     dialog.showErrorBox('Unable to save GSI configuration',
       'The file already exists or cannot be written. Use a new filename or deliberately remove the old file before exporting again.');
+  }
+}
+
+async function resetGsiKey() {
+  if (!credentialStore || switching || modeManager?.current?.mode !== 'demo') return;
+  const confirmation = await dialog.showMessageBox(window, {
+    type: 'warning',
+    message: 'Reset the saved CS2 observer key?',
+    detail: 'Your current CS2 GSI CFG will stop authenticating. The next Live session creates a new encrypted key. You must export and install a replacement CFG. This cannot be undone.',
+    buttons: ['Cancel', 'Reset key'],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  });
+  if (confirmation.response !== 1 ||
+      switching || modeManager?.current?.mode !== 'demo') return;
+  try {
+    credentialStore.reset();
+    dialog.showMessageBoxSync(window, {
+      type: 'info',
+      message: 'Saved CS2 observer key reset.',
+      detail: 'Start Live Observer, export a new CFG and replace the obsolete file in CS2.',
+    });
+  } catch {
+    dialog.showErrorBox('Cannot reset observer key',
+      'Windows user encryption is unavailable or the credential file could not be changed. No new key was generated.');
   }
 }
 
@@ -168,6 +195,11 @@ function updateMenu() {
         label: 'Export CS2 GSI Config…',
         enabled: !switching && mode === 'live',
         click: () => exportGsiConfig(),
+      },
+      {
+        label: 'Reset saved GSI key…',
+        enabled: !switching && mode === 'demo',
+        click: () => resetGsiKey(),
       },
       { type: 'separator' },
       {
@@ -209,7 +241,7 @@ async function switchMode(mode) {
       dialog.showMessageBoxSync(window, {
         type: 'info',
         message: 'Live Observer is waiting for CS2.',
-        detail: 'Choose Broadcast → Export CS2 GSI Config and install the file in your local game/csgo/cfg directory. Restart CS2. The HUD will not fabricate match information.',
+        detail: 'If this is the first Live session or the key was reset, use Broadcast → Export CS2 GSI Config and install the file under game/csgo/cfg, then restart CS2. Normal restarts reuse your encrypted Windows key. The HUD never fabricates match data.',
       });
     }
   } catch {
@@ -234,12 +266,19 @@ async function openDesktop() {
   const { createDesktopModes } = await import(pathToFileURL(
     join(__dirname, 'modes.js')
   ).href);
+  const { createObserverCredentialStore } = await import(pathToFileURL(
+    join(__dirname, 'credentials.js')
+  ).href);
   const userData = app.getPath('userData');
   mkdirSync(userData, { recursive: true });
   const settingsPath = join(userData, 'operator-settings.json');
+  credentialStore = createObserverCredentialStore({
+    filePath: join(userData, 'observer-credential.json'),
+    encryption: safeStorage,
+  });
   modeManager = createDesktopModes({
     demo: () => startDesktopDemo({ settingsPath }),
-    live: () => startDesktopLive({ settingsPath }),
+    live: () => startDesktopLive({ settingsPath, token: credentialStore.getOrCreate() }),
   });
   await modeManager.switchTo('demo');
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, answer) => {

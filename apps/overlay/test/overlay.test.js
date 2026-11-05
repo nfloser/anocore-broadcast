@@ -21,6 +21,7 @@ test('public projection removes player info, source IDs and arbitrary extra payl
   assert.deepEqual(projected, {
     status: 'live', map: 'de_inferno', mapPhase: null,
     round: 5, ctScore: 3, tScore: 2, roundPhase: null, bombState: null,
+    players: [],
   });
   assert.ok(!JSON.stringify(projected).includes('SECRET'));
   assert.ok(!JSON.stringify(projected).includes(token));
@@ -86,6 +87,27 @@ test('authorized GSI input becomes a time-delayed and sanitized OBS scoreboard',
   assert.equal(data.round, 12);
   assert.equal(JSON.stringify(data).includes('Secret Player'), false);
   assert.equal(JSON.stringify(data).includes('12345'), false);
+  assert.deepEqual(data.players, []);
   now = 17_001;
   assert.deepEqual(await (await fetch(stateUrl)).json(), { status: 'unavailable' });
+});
+
+test('spectator roster is allowlisted, without Steam IDs or arbitrary weapons', () => {
+  const state = createPublicScoreboard({
+    freshness: { source: { status: 'live' } },
+    snapshots: { source: {
+      map: { ctScore: 2, tScore: 1 },
+      players: [{ name: '<img src=x onerror=alert(1)>', team: 'CT',
+        health: 50, armor: 100, money: 5000, kills: 9, assists: 1,
+        deaths: 3, steamid: '76561198000000001', weapons: { hidden: 'knife' } }],
+    } },
+  });
+  assert.equal(state.players[0].name, '<img src=x onerror=alert(1)>');
+  assert.equal(state.players[0].money, 5000);
+  assert.equal(JSON.stringify(state).includes('76561198000000001'), false);
+  assert.equal(JSON.stringify(state).includes('knife'), false);
+  assert.deepEqual(createPublicScoreboard({
+    freshness: { source: { status: 'stale' } },
+    snapshots: { source: { players: [{ name: 'Private', team: 'CT' }] } },
+  }), { status: 'unavailable' });
 });

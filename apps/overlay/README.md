@@ -1,6 +1,6 @@
 # AnoCore Broadcast · first OBS scoreboard
 
-This is a *minimal working scoreboard*, not a full ten-player broadcast HUD. It reads only the authenticated in-process observer timeline and publishes a tiny, intentionally sanitized view. Player names, money, inventories, raw observer payloads and credentials never enter the browser API.
+This is a *minimal working scoreboard*, not a full ten-player broadcast HUD. It reads only the authenticated in-process observer timeline and publishes a tiny, intentionally sanitized view. When observer-only `allplayers_*` data is available, the browser API includes allowlisted player names, health, armor, cash and K/A/D. Steam IDs, weapon inventories, arbitrary fields and credentials are not exposed. This is still sensitive spectator information, so keep the browser source local.
 
 ## Start locally
 
@@ -13,9 +13,9 @@ This is a *minimal working scoreboard*, not a full ten-player broadcast HUD. It 
    $env:ANOCORE_BROADCAST_DELAY_MS="0"
    npm run broadcast
    ```
-4. In OBS add a **Browser Source**, URL `http://127.0.0.1:3009/`, width 1920, height 180. Place it at the top of the scene.
+4. In OBS add a **Browser Source**, URL `http://127.0.0.1:3009/`, width 1920, height 500. Place it at the top of the scene.
 5. Check `http://127.0.0.1:3008/health` for GSI freshness. The scoreboard shows unavailable until matching GSI arrives.
 
-The configured delay is only a local read gate, not verified synchronization with GOTV/OBS video. Observe the source delay before going live. The scoreboard currently shows CT/T side scores, map, round and limited round/bomb status where GSI provides them. It cannot show true team identities, a ten-player HUD, exact round clock, radar, all weapons, replay or operator controls. Those require further adapters and real CS2 tests.
+The configured delay is only a local read gate, not verified synchronization with GOTV/OBS video. Observe the source delay before going live. The scoreboard currently shows CT/T side scores, map, round and limited round/bomb status where GSI provides them. It can show basic ten-player panels when spectator data is available, but not verified team identities, exact round clock, radar, all weapons, killfeed, replay or operator controls. Those require further adapters and real CS2 tests.
 
 The scoreboard HTTP server binds **only to localhost** on port 3009, sends no CORS headers and exposes no privileged data. Neither the GSI token nor a public state endpoint should be exposed outside the trusted observer machine. This prototype does not support distributed production yet.

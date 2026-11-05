@@ -97,3 +97,10 @@ test('rejects repeated event IDs while events are still buffered', () => {
   assert.equal(engine.ingest(packet(1)).status, 'accepted');
   assert.equal(engine.stats().eventCount, 3);
 });
+
+test('accepts the legacy-labelled CS2 GSI provider', () => {
+  const engine = createMatchTimeline({ matchId: 'match-1' });
+  const event = packet(1);
+  event.payload.provider.name = 'Counter-Strike: Global Offensive';
+  assert.equal(engine.ingest(event).status, 'accepted');
+});

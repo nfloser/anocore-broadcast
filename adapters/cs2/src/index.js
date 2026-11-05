@@ -29,7 +29,7 @@ export function normalizeGsiSnapshot(input) {
     throw new TypeError('GSI provider must be an object');
   }
   const source = input.provider;
-  if (source.name !== 'Counter-Strike 2') {
+  if (!['Counter-Strike 2', 'Counter-Strike: Global Offensive'].includes(source.name)) {
     throw new TypeError('Unsupported provider');
   }
 
@@ -89,6 +89,35 @@ export function normalizeGsiSnapshot(input) {
     if (state !== undefined) snapshot.bomb.state = state;
     const countdown = safeNumber(input.bomb.countdown);
     if (countdown !== undefined) snapshot.bomb.countdown = countdown;
+  }
+  // Spectator-only GSI. Never preserve the source SteamID keys.
+  if (isRecord(input.allplayers)) {
+    const players = [];
+    for (const entry of Object.values(input.allplayers).slice(0, 32)) {
+      if (!isRecord(entry) || !['CT', 'T'].includes(entry.team)) continue;
+      const state = isRecord(entry.state) ? entry.state : {};
+      const stats = isRecord(entry.match_stats) ? entry.match_stats : {};
+      const player = { team: entry.team, name: safeString(entry.name, 40) ?? 'Player' };
+      if (Number.isSafeInteger(entry.observer_slot) &&
+          entry.observer_slot >= 0 && entry.observer_slot <= 10) {
+        player.slot = entry.observer_slot;
+      }
+      for (const field of ['health', 'armor', 'money']) {
+        const value = state[field];
+        if (Number.isSafeInteger(value) && value >= 0 && value <= 100000) {
+          player[field] = value;
+        }
+      }
+      for (const field of ['kills', 'assists', 'deaths']) {
+        const value = stats[field];
+        if (Number.isSafeInteger(value) && value >= 0 && value <= 9999) {
+          player[field] = value;
+        }
+      }
+      players.push(player);
+      if (players.length >= 10) break;
+    }
+    snapshot.players = players;
   }
   return snapshot;
 }

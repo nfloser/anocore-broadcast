@@ -5,6 +5,9 @@
 function score(value) {
   return Number.isSafeInteger(value) && value >= 0 && value <= 999 ? value : null;
 }
+function cash(value) {
+  return Number.isSafeInteger(value) && value >= 0 && value <= 100000 ? value : null;
+}
 function label(value, max = 48) {
   return typeof value === 'string' && value.length <= max && /^[a-zA-Z0-9_ -]+$/.test(value) ? value : null;
 }
@@ -23,6 +26,20 @@ export function createPublicScoreboard(timelineView) {
   const map = snapshot.map ?? {};
   const round = snapshot.round ?? {};
   const bomb = snapshot.bomb ?? {};
+  const players = Array.isArray(snapshot.players) ?
+    snapshot.players.filter(player => player && (player.team === 'CT' || player.team === 'T'))
+      .slice(0, 10).map(player => ({
+        team: player.team,
+        name: typeof player.name === 'string' ? player.name.slice(0, 40) : 'Player',
+        health: score(player.health),
+        armor: score(player.armor),
+        money: cash(player.money),
+        kills: score(player.kills),
+        assists: score(player.assists),
+        deaths: score(player.deaths),
+        slot: score(player.slot),
+      })) : [];
+  players.sort((a, b) => (a.slot ?? 99) - (b.slot ?? 99));
   return {
     status: 'live',
     map: label(map.name),
@@ -32,5 +49,6 @@ export function createPublicScoreboard(timelineView) {
     tScore: score(map.tScore),
     roundPhase: label(round.phase),
     bombState: label(bomb.state),
+    players,
   };
 }

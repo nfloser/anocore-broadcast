@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, rmSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createEventJournal } from '../src/journal.js';
@@ -99,4 +99,79 @@ test('journal reads its persisted data without exposing the token', t => {
   journal.append([{ sequence: 1, matchId: 'match-1' }]);
   assert.deepEqual(journal.read(), [{ sequence: 1, matchId: 'match-1' }]);
   assert.equal(readFileSync(path, 'utf8').includes(secret), false);
+});
+
+test('automatically rotates journal segments and replays all records in order', t => {
+  const path = tmp(t);
+  const journal = createEventJournal({ filePath: path, segmentBytes: 160, maxBytes: 3000 });
+  const events = Array.from({ length: 12 }, (_, index) => ({
+    sequence: index + 1, matchId: 'match-1', payload: 'data'.repeat(8),
+  }));
+  for (const event of events) journal.append([event]);
+  assert.ok(journal.stats().segmentCount > 1);
+  assert.deepEqual(journal.read(), events);
+  const recovered = createEventJournal({ filePath: path, segmentBytes: 160, maxBytes: 3000 });
+  assert.deepEqual(recovered.read(), events);
+  recovered.append([{ sequence: 13, matchId: 'match-1' }]);
+  assert.equal(createEventJournal({ filePath: path, segmentBytes: 160, maxBytes: 3000 })
+    .read().at(-1).sequence, 13);
+});
+
+test('fails closed on missing or truncated journal segments', t => {
+  const path = tmp(t);
+  const journal = createEventJournal({ filePath: path, segmentBytes: 160 });
+  for (let i = 1; i <= 5; i++) {
+    journal.append([{ sequence: i, payload: 'value'.repeat(8) }]);
+  }
+  const numbered = path + '.000001';
+  assert.equal(readFileSync(numbered).length > 0, true);
+  writeFileSync(numbered, '{"partial":true}');
+  assert.throws(() => createEventJournal({ filePath: path, segmentBytes: 160 }), /incomplete/);
+});
+
+test('fails closed on missing intermediate segment', t => {
+  const path = tmp(t);
+  const journal = createEventJournal({ filePath: path, segmentBytes: 140 });
+  for (let i = 1; i <= 5; i++) {
+    journal.append([{ sequence: i, payload: 'value'.repeat(8) }]);
+  }
+  assert.ok(journal.stats().segmentCount > 2);
+  unlinkSync(path + '.000001');
+  assert.throws(() => createEventJournal({ filePath: path, segmentBytes: 140 }), /missing its beginning/);
+});
+
+test('enforces an aggregate byte limit across segments', t => {
+  const path = tmp(t);
+  const journal = createEventJournal({ filePath: path, maxBytes: 350, segmentBytes: 140 });
+  let accepted = 0;
+  while (true) {
+    try {
+      journal.append([{ sequence: ++accepted, payload: 'value'.repeat(8) }]);
+    } catch (error) {
+      assert.match(error.message, /capacity/);
+      break;
+    }
+  }
+  assert.ok(journal.stats().segmentCount > 1);
+  assert.ok(journal.stats().totalBytes <= 350);
+  assert.equal(journal.read().length, accepted - 1);
+});
+
+test('detects external changes to active journal before appending', t => {
+  const path = tmp(t);
+  const journal = createEventJournal({ filePath: path });
+  journal.append([{ sequence: 1 }]);
+  writeFileSync(path, 'tampered');
+  assert.throws(() => journal.append([{ sequence: 2 }]), /modified/);
+});
+
+test('fails closed when a middle numbered segment is missing', t => {
+  const path = tmp(t);
+  const journal = createEventJournal({ filePath: path, segmentBytes: 140 });
+  for (let i = 1; i <= 7; i++) {
+    journal.append([{ sequence: i, payload: 'value'.repeat(8) }]);
+  }
+  assert.ok(journal.stats().segmentCount > 3);
+  unlinkSync(path + '.000002');
+  assert.throws(() => createEventJournal({ filePath: path, segmentBytes: 140 }), /gap/);
 });

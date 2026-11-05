@@ -95,7 +95,7 @@ export function normalizeGsiSnapshot(input) {
 
 /** Reduces GSI notifications to one explicitly session-scoped snapshot envelope. */
 export function createGsiIngest({ matchId, sourceId = 'observer-1', token, onEvent = () => {},
-  staleAfterMs = DEFAULT_STALE_AFTER_MS, clock = () => Date.now() }) {
+  staleAfterMs = DEFAULT_STALE_AFTER_MS, clock = () => Date.now(), initialSequence = 0 }) {
   if (!MATCH_ID_PATTERN.test(matchId ?? '') || !MATCH_ID_PATTERN.test(sourceId) || sourceId.length > 105) {
     throw new TypeError('matchId and sourceId must be valid IDs');
   }
@@ -106,7 +106,10 @@ export function createGsiIngest({ matchId, sourceId = 'observer-1', token, onEve
       !Number.isSafeInteger(staleAfterMs) || staleAfterMs <= 0) {
     throw new TypeError('Invalid ingest options');
   }
-  let sequence = 0;
+  if (!Number.isSafeInteger(initialSequence) || initialSequence < 0) {
+    throw new TypeError('Invalid initialSequence');
+  }
+  let sequence = initialSequence;
   let lastReceivedAt = null;
 
   function freshness(now = clock()) {

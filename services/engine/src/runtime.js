@@ -1,5 +1,6 @@
 import { createGsiIngest, createGsiServer } from '../../../adapters/cs2/src/index.js';
 import { createMatchTimeline } from './index.js';
+import { createEventJournal } from './journal.js';
 
 /**
  * Assemble the local observer ingest and in-memory broadcast timeline.
@@ -18,13 +19,33 @@ export function createBroadcastRuntime({
   clock = () => Date.now(),
   host = '127.0.0.1',
   port = 3008,
+  journalPath,
+  maxJournalBytes = 32 * 1024 * 1024,
 } = {}) {
+  // No file is created unless persistence is explicitly configured.
+  const journal = journalPath === undefined ? null :
+    createEventJournal({ filePath: journalPath, maxBytes: maxJournalBytes });
+  let recovering = true;
   const timeline = createMatchTimeline({
     matchId, delayMs, staleAfterMs, capacity, clock,
+    onCommit: events => { if (!recovering) journal?.append(events); },
   });
+  if (journal) {
+    // Strict recovery: any corrupted/truncated record or wrong match aborts
+    // startup instead of exposing a partially reconstructed match as valid.
+    for (const event of journal.read()) {
+      const result = timeline.ingest(event);
+      if (result.status !== 'accepted' || result.count !== 1) {
+        throw new Error('Journal recovery failed: invalid event sequence or match');
+      }
+    }
+  }
+
+  recovering = false;
 
   const ingest = createGsiIngest({
     matchId, sourceId, token, staleAfterMs, clock,
+    initialSequence: timeline.lastSequence(sourceId),
     onEvent(event) {
       const result = timeline.ingest(event);
       // The receiver only acknowledges an event if the engine committed it.
@@ -38,11 +59,12 @@ export function createBroadcastRuntime({
   const receiver = createGsiServer(ingest, { host, port });
   return {
     listen: receiver.listen,
-    close: () => new Promise((resolve, reject) => {
+    close: () => !receiver.server.listening ? Promise.resolve() : new Promise((resolve, reject) => {
       receiver.server.close(error => error ? reject(error) : resolve());
     }),
     view: (at) => timeline.view(at),
     stats: () => timeline.stats(),
     freshness: () => ingest.freshness(),
+    journalEnabled: journal !== null,
   };
 }

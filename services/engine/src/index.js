@@ -34,6 +34,7 @@ export function createMatchTimeline({
   staleAfterMs = 5_000,
   capacity = DEFAULT_CAPACITY,
   clock = () => Date.now(),
+  onCommit = () => {},
 } = {}) {
   if (typeof matchId !== 'string' ||
       !/^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$/.test(matchId)) {
@@ -46,7 +47,7 @@ export function createMatchTimeline({
   if (!Number.isSafeInteger(capacity) || capacity < 1) {
     throw new TypeError('Invalid capacity');
   }
-  if (typeof clock !== 'function') throw new TypeError('Invalid clock');
+  if (typeof clock !== 'function' || typeof onCommit !== 'function') throw new TypeError('Invalid clock or commit hook');
 
   const sources = new Map();
   const history = [];
@@ -87,6 +88,12 @@ export function createMatchTimeline({
     const run = [structuredClone(event)];
     for (let sequence = event.sequence + 1; state.pending.has(sequence); sequence++) {
       run.push(state.pending.get(sequence));
+    }
+    // Persist the entire run before making it visible or acknowledging it.
+    try {
+      onCommit(structuredClone(run));
+    } catch {
+      return { status: 'persistence_error' };
     }
     for (const item of run) {
       state.pending.delete(item.sequence);
@@ -130,5 +137,9 @@ export function createMatchTimeline({
     return { eventCount: history.length, sources: sources.size, capacity };
   }
 
-  return { ingest, view, stats };
+  function lastSequence(sourceId) {
+    return sources.get(sourceId)?.lastSequence ?? 0;
+  }
+
+  return { ingest, view, stats, lastSequence };
 }

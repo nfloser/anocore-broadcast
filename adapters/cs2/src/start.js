@@ -6,6 +6,7 @@ const runtime = createBroadcastRuntime({
   token: process.env.ANOCORE_GSI_TOKEN,
   sourceId: 'observer-1',
   delayMs: Number(process.env.ANOCORE_BROADCAST_DELAY_MS ?? 0),
+  journalPath: process.env.ANOCORE_JOURNAL_PATH || undefined,
 });
 const address = await runtime.listen();
 process.stdout.write(`GSI receiver and timeline listening on ${address.address}:${address.port}; run id ${randomUUID()}\n`);

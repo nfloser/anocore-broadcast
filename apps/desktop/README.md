@@ -1,6 +1,6 @@
 # Windows desktop preview (experimental)
 
-The repository now contains an Electron desktop shell for a **synthetic OBS HUD demonstration only**. It bundles Chromium and Node with the application, opens the same local HUD used by the browser demo, provides a separate sandboxed operator-controls window, and owns/stops the GSI ingest + timeline + overlay services. The embedded renderer cannot access Node APIs or the randomly generated ingest secret. The HUD continues to show **DEMO · SYNTHETIC DATA** and the uncalibrated radar warning.
+The repository now contains an Electron desktop shell for an **experimental local OBS HUD preview and local CS2 observer input**. It bundles Chromium and Node with the application, opens the same local HUD used by the browser demo, provides a separate sandboxed operator-controls window, and owns/stops the GSI ingest + timeline + overlay services. The embedded renderer cannot access Node APIs or the randomly generated ingest secret. Live and Demo modes are separately started and shut down inside the desktop main process. The HUD continues to show **DEMO · SYNTHETIC DATA** and the uncalibrated radar warning.
 
 ## Local development
 
@@ -14,10 +14,20 @@ Open **Broadcast → Operator Controls** (or `Ctrl+,`) inside the desktop previe
 
 The demo preview and operator panel are separate windows. Close the main HUD window to stop the owned receiver and HUD servers. Settings persist across desktop restarts, but are scoped to this Windows user and this app build.
 
+## Switching between Demo and local CS2 Live Observer
+
+The app starts in **Demo** mode. Use **Broadcast → Start Live Observer** to stop the synthetic feed and begin waiting for a real, authenticated **local** spectator GSI source. While waiting, the HUD intentionally shows unavailable rather than fake scores. Open **Broadcast → Operator Controls** to see `Waiting for CS2 observer`, `Receiving observer data` or `Observer data stale`. Use **Broadcast → Start Demo** to switch back.
+
+In Live mode choose **Broadcast → Export CS2 GSI Config…**. Save `gamestate_integration_anocore.cfg` into your CS2 installation's `game/csgo/cfg/` folder (for example under the Steam Counter-Strike Global Offensive installation). You may save elsewhere and copy it yourself. Restart the game, run a **spectator/GOTV observation** that supplies the requested data, and keep Live mode running.
+
+The exported CFG contains a randomly generated **session-only authentication key** required by CS2. **Treat the CFG as a secret and do not share it.** No keys are stored in the operator settings file, browser state or renderer. Each new Live session creates a new key; **re-export and replace the old CFG whenever you restart Live mode or the app**. The app deliberately refuses to silently overwrite an existing CFG when exporting; remove an obsolete file deliberately before saving a replacement. This initial version assumes CS2 and the application run on the same Windows machine and listens on `127.0.0.1:3008`.
+
+The OBS Browser Source URL remains `http://127.0.0.1:3009/`, copied via the Broadcast menu. The live HUD does **not** include the synthetic demo radar, does not publish player world coordinates, and has no verified GOTV/video-frame synchronization. Test the source using an authorized observer only; this integration has not yet undergone a real CS2 or clean Windows acceptance test.
+
 ## Windows portable preview build
 
 The `Windows desktop preview` GitHub Actions workflow packages an unsigned x64 portable Electron executable and publishes its SHA-256 checksum as a workflow artifact. It is a test artifact, **not** a signed/released/production-ready installation. Preview artifacts must be independently tested on an actual clean Windows machine; security prompts may appear for unsigned binaries.
 
 ## Still required for Issue #41
 
-Production live GSI configuration, OS-backed secret storage for future live credentials, mode switching, a setup wizard, a clean Windows x64 smoke test, signed installer, updates, release process, and measured video/GOTV synchronization. None of those are implied by the desktop demo shell.
+A completed setup wizard, automatic CS2 folder discovery, OS-backed secret storage/controlled session persistence, actual observer validation, robust match lifecycle, clean Windows x64 smoke test, signed installer, updates, release process, and measured video/GOTV synchronization. None of those are implied by the desktop demo shell.

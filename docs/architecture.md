@@ -38,3 +38,6 @@ Never publish privileged information to players. A stale source is flagged and i
 
 ## Technology
 Node.js 22+ and built-in tests; no final desktop UI, durable database, or backend transport contract has been selected.
+
+## Desktop observer modes
+The desktop shell starts in explicitly synthetic Demo mode. A separately constructed Live observer mode runs the existing loopback authenticated GSI receiver and only the allowlisted freshness-gated OBS projection. A new random key is generated in the main process for every Live session; it can be written only by an explicit native CS2 CFG export, not by a renderer or browser API. Switching releases owned ports before binding the next mode, and failure returns to a fresh synthetic demo when possible. The user-facing connection label reflects received authenticated GSI freshness. Real observer acceptance, production video sync and robust credential lifecycle are not complete.

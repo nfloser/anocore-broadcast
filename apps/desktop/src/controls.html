@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'none'; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<title>AnoCore Broadcast · Operator Controls</title>
+<link rel="stylesheet" href="./controls.css">
+<script src="./controls.js" defer></script>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">ANOCORE <span>/ BROADCAST</span></div>
+    <h1>Production controls</h1>
+    <p>Edit your demo's team identities, palette and live roster visibility. Changes update the OBS preview immediately.</p>
+  </header>
+  <form id="controls">
+    <section class="panel">
+      <div class="panel-heading"><span>01</span><h2>Team identities</h2></div>
+      <div class="two-columns">
+        <label>CT team name<input id="ctName" maxlength="28" required autocomplete="off"></label>
+        <label>T team name<input id="tName" maxlength="28" required autocomplete="off"></label>
+        <label>CT accent color<input id="ctColor" type="color" required></label>
+        <label>T accent color<input id="tColor" type="color" required></label>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-heading"><span>02</span><h2>Graphics visibility</h2></div>
+      <label class="toggle"><input id="showRoster" type="checkbox">
+        <span>Display ten-player roster panels</span>
+      </label>
+      <p class="note">The synthetic radar remains labelled as a demo and cannot be enabled for real observer data here.</p>
+    </section>
+    <div class="actions"><button id="apply" type="submit">Apply to broadcast</button>
+      <span id="message" role="status" aria-live="polite">Loading settings…</span></div>
+  </form>
+  <footer>LOCAL DEMO CONTROLS · Changes are saved for your Windows user.</footer>
+</main>
+</body>
+</html>

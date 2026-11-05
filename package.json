@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "engines": {"node": ">=22"},
-  "workspaces": ["packages/*", "adapters/*"],
+  "engines": { "node": ">=22" },
+  "workspaces": ["packages/*", "adapters/*", "services/*"],
   "scripts": {
     "test": "node --test",
-    "check": "node --check packages/protocol/src/index.js && node --check packages/protocol/test/protocol.test.js && node --check adapters/cs2/src/index.js && node --check adapters/cs2/src/start.js && node --check adapters/cs2/test/gsi.test.js"
+    "check": "node --check packages/protocol/src/index.js && node --check packages/protocol/test/protocol.test.js && node --check adapters/cs2/src/index.js && node --check adapters/cs2/src/start.js && node --check adapters/cs2/test/gsi.test.js && node --check services/engine/src/index.js && node --check services/engine/test/timeline.test.js"
   }
 }

@@ -25,6 +25,12 @@ export function createDemoFrame(step, token) {
         2: { name: 'weapon_flashbang', type: 'Grenade', state: 'holstered' },
         3: { name: 'weapon_smokegrenade', type: 'Grenade', state: 'holstered' },
       },
+      position: [
+        -650 + (i % 5) * 295 + (step % 10) * 8,
+        (i < 5 ? -450 : 350) + (step % 9) * 10,
+        12,
+      ].join(', '),
+      forward: [i < 5 ? 1 : -1, (i % 3) - 1, 0].join(', '),
       match_stats: {
         kills: i * 2 + Math.floor(step / 4), assists: i % 4,
         deaths: Math.floor(step / 7) + i % 3,

@@ -3,6 +3,7 @@ import { createBroadcastRuntime } from '../../../services/engine/src/runtime.js'
 import { createPublicScoreboard } from './public-state.js';
 import { createOverlayServer } from './server.js';
 import { createDemoFrame } from './demo-fixture.js';
+import { createDemoRadar } from './demo-radar.js';
 import { createBroadcastSettings } from '../../manager/src/settings.js';
 import { createManagerServer } from '../../manager/src/server.js';
 
@@ -17,10 +18,12 @@ const settings = createBroadcastSettings({
 const overlay = createOverlayServer({
   port: 3009,
   scoreboard: () => {
-    const state = createPublicScoreboard(runtime.view());
+    const view = runtime.view();
+    const state = createPublicScoreboard(view);
     const config = settings.get();
     return {
       ...state, demo: true, settings: config,
+      radar: state.status === 'live' ? createDemoRadar(view) : null,
       players: config.showRoster ? state.players : [],
     };
   },

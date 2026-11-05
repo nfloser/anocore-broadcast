@@ -41,3 +41,25 @@ main { width: 100%; padding: 16px 24px; }
   font-size: 15px; font-weight: 900; letter-spacing: .18em; color: #fff;
   background: #a43232; border: 2px solid #ffc0b6; }
 .demo-mark[hidden] { display: none; }
+
+/* Intentional abstract grid. No real-map geometry or artwork. */
+.radar-preview { width: 310px; margin: 12px auto 0; padding: 11px; background: #131b24; border: 1px solid #566272; }
+.radar-preview[hidden] { display: none; }
+.radar-heading { display: flex; align-items: flex-start; gap: 5px; flex-direction: column; font-size: 10px; letter-spacing: .07em; }
+.radar-heading span { color: #f2c88d; font-weight: 700; }
+.radar-grid { margin-top: 9px; position: relative; width: 100%; aspect-ratio: 1; overflow: hidden;
+  border: 2px solid #566477;
+  background-color: #111820;
+  background-image: linear-gradient(#53617140 1px, transparent 1px), linear-gradient(90deg, #53617140 1px, transparent 1px);
+  background-size: 10% 10%; }
+.radar-markers { position: absolute; inset: 8px; }
+.radar-dot { position: absolute; display: flex; justify-content: center; align-items: center;
+  transform: translate(-50%, -50%); width: 24px; height: 24px; border: 2px solid #fff9;
+  border-radius: 50%; font-size: 12px; font-weight: 800; }
+.radar-dot::after { content: ""; position: absolute; left: 9px; bottom: 21px;
+  border-left: 3px solid transparent; border-right: 3px solid transparent;
+  border-bottom: 8px solid currentColor; transform-origin: 3px 20px;
+  transform: rotate(var(--direction, 0rad)); }
+.radar-ct { background: #416d8e; color: #b1dfff; }
+.radar-t { background: #a17a2c; color: #fff0b0; }
+.radar-dead { opacity: .4; }

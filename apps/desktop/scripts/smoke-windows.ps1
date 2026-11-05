@@ -2,7 +2,7 @@
 # Launches the unpacked Electron binary created by the portable builder.
 # Checks HTTP/JSON rendering, clean GUI shutdown, port release and restart.
 $ErrorActionPreference = 'Stop'
-$exe = Join-Path $PSScriptRoot '..\..\dist\win-unpacked\AnoCore Broadcast.exe'
+$exe = Join-Path $PSScriptRoot '..\..\..\dist\win-unpacked\AnoCore Broadcast.exe'
 $exe = [IO.Path]::GetFullPath($exe)
 if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
     throw "Packaged desktop executable not found"

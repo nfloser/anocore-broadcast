@@ -1,37 +1,27 @@
 # Architecture: initial decisions
 
 ## Product boundary
-AnoCore Broadcast is a standalone product, not a submodule of the gameserver. A broadcaster may connect through an observer's CS2 Game State Integration without installing the AnoCore server plugin. Richer server-side data and automation will use optional, authenticated adapters.
+AnoCore Broadcast is a standalone product, not a submodule of the gameserver. An observer's CS2 Game State Integration provides a first-party data source without AnoCore. Richer server-side data is provided by optional authenticated adapters.
 
-## Proposed logical components
-1. **Ingest adapters:** translate observer GSI and approved server integrations to versioned events; explicitly record source and event time.
-2. **Engine:** validate envelopes, de-duplicate and order events per source, maintain match state and recover snapshots after reconnect.
-3. **Broadcast clock:** map game ticks and observed capture times onto the delayed viewer timeline. Never show future events before corresponding video frames.
-4. **Overlay renderer:** read-only, least-privilege browser graphics; visible degraded mode when data is stale.
-5. **Operator manager:** authenticated administration of matches, themes, scenes and manual overrides.
-6. **Recording and replay:** separate video capture/storage and event markers; failure must not interrupt the game server.
+## Implemented
+- Versioned protocol envelope validation in `packages/protocol`.
+- CS2 observer GSI HTTP receiver in `adapters/cs2`: loopback binding, required shared secret, bounded JSON body, conservative normalization into `observer.snapshot` events, in-memory sequence and source freshness.
+- Regression tests for malformed, unauthorized, oversized and disconnected/stale conditions.
 
-Only the versioned envelope validation exists today.
+## Planned
+- Engine: de-duplicate and order events per source; maintain match state; recover snapshots after reconnect.
+- Broadcast clock: align observer video with received events and GOTV delay. Prevent future-event spoilers.
+- OBS graphics: render current data and visibly degrade on stale sources.
+- Operator manager: authenticated match setup, themes, scenes, and manual overrides.
+- Recording/replay: separate capture of video and event markers; no impact on game server.
 
 ## Protocol contract v1
 `{ version, eventId, matchId, sourceId, type, sequence, occurredAt, tick?, payload }`
 
-- `version` is an exact integer protocol version (currently 1).
-- `eventId` supports idempotent event processing.
-- `matchId` isolates concurrent matches.
-- `sourceId` identifies an ingest source, while `sequence` is source-local.
-- `occurredAt` is event time in UTC epoch milliseconds. Ingest receive time will be tracked separately.
-- `tick` is optional. It must not be fabricated when unavailable.
-- `payload` is an object; event-type schemas and authorization remain future work.
-- Validation does not authenticate a sender or establish data correctness.
+For the GSI adapter, `occurredAt` is the local receiver time, not the GSI provider's epoch timestamp; original provider timestamp is preserved in the normalized payload when supplied. The adapter does not infer game ticks, match ID, or video delay. A configured match ID scopes the session. The payload omits the auth object. Authentication is performed at the ingest boundary and does not make event contents inherently trustworthy.
 
-## Reliability requirements
-- A stale source must be marked stale; no frozen scoreboard should masquerade as live.
-- Observer switching, reconnects, halftime, overtime, rematches, and missing events need deterministic test fixtures.
-- Time alignment must be validated against actual broadcast video and GOTV delay.
-- Separate process boundaries so a rendering crash cannot stop a CS2 match.
-- Never expose admin credentials or privileged live information in a public overlay.
-- Establish measured latency, recovery time, and availability objectives after instrumentation exists.
+## Risk boundaries
+Never publish privileged information to players. A stale source must be flagged. GSI may not provide comprehensive spectator data. It is not a guaranteed substitute for live observer video. Ensure permission and sync controls before displaying full competitive information. Do not expose management credentials in public OBS overlays. A renderer failure must not interrupt the gameserver.
 
 ## Technology
-Node.js 22+ is used for the initial package and dependency-free test runner. No final desktop UI, transport, database, or backend language has been selected. Decisions will be recorded before implementation.
+Node.js 22+ and its built-in test runner are used for the initial services. No final desktop UI, durable store, or complete transport contract has been selected.

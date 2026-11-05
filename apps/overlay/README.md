@@ -40,3 +40,7 @@ $env:ANOCORE_MANAGER_CONFIG_PATH="$HOME\\anocore-broadcast-operator.json"
 ```
 
 The optional versioned JSON file contains only public HUD settings, never the operator or GSI tokens. It is created after a successful settings change. Existing malformed files abort startup rather than silently discarding your layout. Back up the file before upgrades; avoid network shares and concurrent writers. Do not reuse the GSI token as an operator token. The manager is disabled if the environment variable is absent, binds only to loopback and rejects cross-origin writes. Never expose its port outside the observer machine.
+
+## Equipment from observer GSI
+
+The GSI sample configuration now requests `allplayers_weapons`. When the spectator receives the weapons dictionary, the roster shows the weapon marked `active` and a bounded count of entries marked `type: Grenade`. Without a weapons dictionary, both fields are explicitly unknown; an empty inventory reports zero utility. No skins, raw inventory, ammo data, SteamIDs or other arbitrary fields are returned to the browser. Verify live data against an actual CS2 observer before relying on this display in a production broadcast.

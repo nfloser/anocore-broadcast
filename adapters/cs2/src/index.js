@@ -114,6 +114,20 @@ export function normalizeGsiSnapshot(input) {
           player[field] = value;
         }
       }
+      if (isRecord(entry.weapons)) {
+        let activeWeapon = null;
+        let utilityCount = 0;
+        for (const weapon of Object.values(entry.weapons).slice(0, 32)) {
+          if (!isRecord(weapon)) continue;
+          const name = typeof weapon.name === 'string' &&
+            /^weapon_[a-z0-9_]{1,27}$/.test(weapon.name) ? weapon.name : null;
+          if (!name) continue;
+          if (weapon.state === 'active') activeWeapon = name;
+          if (weapon.type === 'Grenade') utilityCount = Math.min(8, utilityCount + 1);
+        }
+        player.activeWeapon = activeWeapon;
+        player.utilityCount = utilityCount;
+      }
       players.push(player);
       if (players.length >= 10) break;
     }

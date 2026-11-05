@@ -38,6 +38,10 @@ export function createPublicScoreboard(timelineView) {
         assists: score(player.assists),
         deaths: score(player.deaths),
         slot: score(player.slot),
+        activeWeapon: typeof player.activeWeapon === 'string' &&
+          /^weapon_[a-z0-9_]{1,27}$/.test(player.activeWeapon) ? player.activeWeapon : null,
+        utilityCount: Number.isSafeInteger(player.utilityCount) &&
+          player.utilityCount >= 0 && player.utilityCount <= 8 ? player.utilityCount : null,
       })) : [];
   players.sort((a, b) => (a.slot ?? 99) - (b.slot ?? 99));
   return {

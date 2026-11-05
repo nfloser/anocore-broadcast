@@ -20,3 +20,13 @@ CS2 GSI typically sends a subset of keys based on configuration and player permi
 - The health endpoint returns freshness only, never credentials or match state.
 - Event delivery is synchronous and in-memory. This initial adapter has no durable queue or reconnection state; restart resets sequence numbering.
 - The sender identity cannot be cryptographically verified beyond the shared secret.
+
+## Data flow to the engine
+
+The `start.js` command now creates the GSI receiver **and** the in-memory observer timeline. Each authorized GSI POST is normalized into an `observer.snapshot` event and committed to the engine before an HTTP 202 response is sent.
+
+For in-process consumers, import `createBroadcastRuntime` from `services/engine/src/runtime.js` and call `view(at)` to obtain the delayed, freshness-gated snapshot. Use the optional `ANOCORE_BROADCAST_DELAY_MS` environment variable to set a nonnegative read delay. It is only a configurable time gate, **not** video-synchronized proof.
+
+The HTTP API intentionally has **no match-state output endpoint**: raw observer data may be privileged. A properly authenticated and permission-filtered transport for the OBS renderer is future work. When the engine refuses a message (for example due to its bounded capacity), the endpoint responds with HTTP 503, and the ingest sequence does not advance. Long-running ingestion still needs durable storage and an explicit recovery policy.
+
+Integration tests cover authenticated HTTP POST through the real receiver into the timeline and delayed or stale read behavior. Testing on an actual CS2 observer PC remains outstanding.

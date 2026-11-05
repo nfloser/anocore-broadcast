@@ -7,10 +7,11 @@ AnoCore Broadcast is a standalone product, not a submodule of the gameserver. An
 - Versioned protocol envelope validation in `packages/protocol`.
 - CS2 observer GSI HTTP receiver in `adapters/cs2`: loopback binding, required shared secret, bounded JSON body, conservative normalization into `observer.snapshot` events, in-memory sequence and source freshness.
 - Deterministic in-memory `observer.snapshot` timeline in `services/engine` with strict source sequence handling, duplicate suppression, gap degradation, bounded history and delayed read cutoff.
+- Local composition in `services/engine/src/runtime.js` connects authenticated GSI HTTP POSTs to the timeline and rejects ingestion if the engine cannot commit an event. The CLI starts this composed runtime. Tests exercise the complete HTTP-to-engine path.
 - Automated regression tests for malformed, unauthorized, oversized, disconnected/stale, duplicate, reordered and delayed-input cases.
 
 ## Planned
-- Integration between the GSI adapter and engine, event-type payload schemas and secure runtime management.
+- Type-specific payload schemas, an authenticated read API for approved broadcast operators, and secure runtime lifecycle management.
 - Durable ingestion and session-aware snapshot recovery across reconnect and restart.
 - Broadcast clock alignment validated against video and GOTV delay; current time gate alone is insufficient.
 - Round, halftime, overtime, match scoring and team reconciliation across data sources.

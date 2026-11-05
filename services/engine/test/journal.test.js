@@ -137,7 +137,7 @@ test('fails closed on missing intermediate segment', t => {
   }
   assert.ok(journal.stats().segmentCount > 2);
   unlinkSync(path + '.000001');
-  assert.throws(() => createEventJournal({ filePath: path, segmentBytes: 140 }), /gap/);
+  assert.throws(() => createEventJournal({ filePath: path, segmentBytes: 140 }), /missing its beginning/);
 });
 
 test('enforces an aggregate byte limit across segments', t => {
@@ -163,4 +163,15 @@ test('detects external changes to active journal before appending', t => {
   journal.append([{ sequence: 1 }]);
   writeFileSync(path, 'tampered');
   assert.throws(() => journal.append([{ sequence: 2 }]), /modified/);
+});
+
+test('fails closed when a middle numbered segment is missing', t => {
+  const path = tmp(t);
+  const journal = createEventJournal({ filePath: path, segmentBytes: 140 });
+  for (let i = 1; i <= 7; i++) {
+    journal.append([{ sequence: i, payload: 'value'.repeat(8) }]);
+  }
+  assert.ok(journal.stats().segmentCount > 3);
+  unlinkSync(path + '.000002');
+  assert.throws(() => createEventJournal({ filePath: path, segmentBytes: 140 }), /gap/);
 });

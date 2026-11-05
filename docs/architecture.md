@@ -6,22 +6,25 @@ AnoCore Broadcast is a standalone product, not a submodule of the gameserver. An
 ## Implemented
 - Versioned protocol envelope validation in `packages/protocol`.
 - CS2 observer GSI HTTP receiver in `adapters/cs2`: loopback binding, required shared secret, bounded JSON body, conservative normalization into `observer.snapshot` events, in-memory sequence and source freshness.
-- Regression tests for malformed, unauthorized, oversized and disconnected/stale conditions.
+- Deterministic in-memory `observer.snapshot` timeline in `services/engine` with strict source sequence handling, duplicate suppression, gap degradation, bounded history and delayed read cutoff.
+- Automated regression tests for malformed, unauthorized, oversized, disconnected/stale, duplicate, reordered and delayed-input cases.
 
 ## Planned
-- Engine: de-duplicate and order events per source; maintain match state; recover snapshots after reconnect.
-- Broadcast clock: align observer video with received events and GOTV delay. Prevent future-event spoilers.
-- OBS graphics: render current data and visibly degrade on stale sources.
-- Operator manager: authenticated match setup, themes, scenes, and manual overrides.
+- Integration between the GSI adapter and engine, event-type payload schemas and secure runtime management.
+- Durable ingestion and session-aware snapshot recovery across reconnect and restart.
+- Broadcast clock alignment validated against video and GOTV delay; current time gate alone is insufficient.
+- Round, halftime, overtime, match scoring and team reconciliation across data sources.
+- OBS graphics with visibly degraded state when sources are stale.
+- Operator manager, authenticated match setup, themes, scenes and manual overrides.
 - Recording/replay: separate capture of video and event markers; no impact on game server.
 
 ## Protocol contract v1
 `{ version, eventId, matchId, sourceId, type, sequence, occurredAt, tick?, payload }`
 
-For the GSI adapter, `occurredAt` is the local receiver time, not the GSI provider's epoch timestamp; original provider timestamp is preserved in the normalized payload when supplied. The adapter does not infer game ticks, match ID, or video delay. A configured match ID scopes the session. The payload omits the auth object. Authentication is performed at the ingest boundary and does not make event contents inherently trustworthy.
+For the GSI adapter, `occurredAt` is receiver time, not the GSI provider's timestamp; provider timestamp is preserved when supplied. The adapter does not infer game ticks or video delay. A configured match ID scopes the session. The payload omits the auth object. Authentication is performed at ingest, not inside the engine.
 
-## Risk boundaries
-Never publish privileged information to players. A stale source must be flagged. GSI may not provide comprehensive spectator data. It is not a guaranteed substitute for live observer video. Ensure permission and sync controls before displaying full competitive information. Do not expose management credentials in public OBS overlays. A renderer failure must not interrupt the gameserver.
+## Reliability and security
+Never publish privileged information to players. A stale source is flagged and its snapshot is withheld. Missing events are not silently skipped. History is bounded and rejects new events when full; it is not durable storage. Time gating guarantees only that later receiver timestamps are held back by a chosen delay; it does not guarantee accurate production synchronization. Avoid putting any privileged access information in public OBS overlays. A renderer failure must not interrupt the CS2 gameserver.
 
 ## Technology
-Node.js 22+ and its built-in test runner are used for the initial services. No final desktop UI, durable store, or complete transport contract has been selected.
+Node.js 22+ and built-in tests; no final desktop UI, durable database, or backend transport contract has been selected.

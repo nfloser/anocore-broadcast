@@ -97,3 +97,25 @@ test('HTTP handles valid payload, malformed JSON, access control and stale statu
 test('rejects source identifiers that cannot fit into envelope event IDs', () => {
   assert.throws(() => createGsiIngest({ matchId: 'match-1', sourceId: 's'.repeat(110), token }));
 });
+
+test('bounds and normalizes spectator roster without leaking Steam IDs', () => {
+  const raw = fixture();
+  raw.allplayers = {
+    '76561198000000001': {
+      name: '<script>ignored</script>', team: 'CT', observer_slot: 3,
+      state: { health: 70, armor: 96, money: 2700, secret: 'not allowed' },
+      match_stats: { kills: 21, assists: 4, deaths: 12, damage: 9000 },
+    },
+    '76561198000000002': { name: 'Second', team: 'T', state: { health: -10 } },
+    spectator: { team: 'SPEC', name: 'Spectator' },
+  };
+  const projected = normalizeGsiSnapshot(raw);
+  assert.equal(projected.players.length, 2);
+  assert.deepEqual(projected.players[0], {
+    team: 'CT', name: '<script>ignored</script>', slot: 3,
+    health: 70, armor: 96, money: 2700, kills: 21, assists: 4, deaths: 12,
+  });
+  assert.equal(projected.players[1].health, undefined);
+  assert.equal(JSON.stringify(projected).includes('76561198000000001'), false);
+  assert.equal(JSON.stringify(projected).includes('not allowed'), false);
+});

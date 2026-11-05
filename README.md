@@ -2,7 +2,7 @@
 
 Independent CS2 broadcast production suite. The goal is a configurable and reliable CS2 broadcast workflow: live HUD, production control, tournament operations, observer tooling, and replay support.
 
-> **Status: early development.** A local authenticated CS2 Game State Integration receiver is connected to an observer timeline with optional experimental local event journaling. There is now a **first local OBS scoreboard** for map, CT/T scores, round and status, but **no** full ten-player HUD, manager, verified video sync, replay system or production-ready release.
+> **Status: early development.** A local authenticated CS2 Game State Integration receiver is connected to an observer timeline with optional experimental local event journaling. There is now a **local OBS HUD prototype** for map, CT/T scores, round, status and spectator rosters when GSI provides them, but **no** full ten-player HUD, manager, verified video sync, replay system or production-ready release.
 
 ## Principles
 - Works on CS2 observer machines without requiring AnoCore, MatchZy or another HUD manager.
@@ -16,7 +16,7 @@ Independent CS2 broadcast production suite. The goal is a configurable and relia
 - `adapters/cs2` — GSI ingest and freshness tracking (**implemented**).
 - `services/engine` — HTTP-to-engine pipeline, in-memory event ordering, optional journal recovery, gap detection, delayed snapshot reads (**partially implemented**).
 - `adapters/anocore` — optional AnoCore/MatchZy integration (**planned**).
-- `apps/overlay` — minimal OBS-ready sanitized scoreboard (**initial implementation**).
+- `apps/overlay` — initial OBS HUD with an allowlisted spectator roster (**initial implementation**).
 - `apps/manager` — operator controls (**planned**).
 
 ## Checks

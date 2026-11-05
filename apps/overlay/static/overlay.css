@@ -18,3 +18,19 @@ main { width: 100%; padding: 16px 24px; }
 .notice { width: max-content; max-width: 95%; margin: 10px auto; background: #191f26; color: #f4c47c; border: 1px solid #916b38; padding: 7px 16px; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
 .is-unavailable { opacity: .68; }
 @media (max-width: 700px) { .board { grid-template-columns: 1fr 1.3fr 1fr; } .team { flex-direction: column; padding: 12px 5px; gap: 6px; } .team strong { font-size: 30px; } .side { font-size: 9px; text-align: center; } .center { padding: 8px 2px; } .map { font-size: 14px; } .brand { font-size: 9px; } }
+
+.roster { max-width: 1180px; margin: 9px auto 0; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.roster[hidden], .roster-notice[hidden] { display: none; }
+.roster-side { min-width: 0; padding: 9px 12px; background: #131a23; border: 1px solid #36414d; }
+.ct-roster { border-top: 3px solid #67addd; }
+.t-roster { border-top: 3px solid #dcbb5b; }
+.roster-side h2 { margin: 0 0 8px; color: #bcc8d6; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.player-list { display: grid; gap: 4px; }
+.player { display: grid; grid-template-columns: 1fr 60px 64px 70px; align-items: center; gap: 8px; padding: 7px 10px; background: #1d2631; font-size: 12px; }
+.player.dead { opacity: .52; }
+.player-name { font-size: 13px; font-weight: 750; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-health { color: #b5d7ae; }
+.player-economy { color: #e9d49b; text-align: right; }
+.player-kda { color: #b9c4cf; font-variant-numeric: tabular-nums; text-align: right; }
+.roster-notice { margin: 12px auto; width: max-content; color: #bcc8d6; background: #1a222c; padding: 8px 14px; font-size: 11px; letter-spacing: .09em; }
+@media (max-width: 700px) { .roster { grid-template-columns: 1fr; } .player { grid-template-columns: 1fr 45px 45px 52px; gap: 3px; } }

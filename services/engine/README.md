@@ -15,3 +15,9 @@
 
 ### Known limits
 In-memory only. Does not persist source sessions across restart. No gap recovery/snapshot rewind protocol, event-type payload schema, clock offset estimation, stable score reducer, global cross-source ordering, authentication or live adapter-to-engine wiring. An untrusted producer must pass through the authenticated GSI adapter first. These are required before production use.
+
+## Optional durable journal (experimental)
+
+Set `ANOCORE_JOURNAL_PATH` to a local file in a writable private directory. Each acknowledged event is synchronously appended to a JSON-lines journal before updating in-memory state. On restart the engine validates and replays the complete journal and resumes the local GSI event sequence. A recovered snapshot is withheld as stale until new data arrives; the receiver reports `waiting` after restart.
+
+The journal defaults to a 32 MiB limit. Once full, POST requests fail with HTTP 503; no silent data loss or rollover occurs. The operator must stop the service and archive or rotate the journal as a separate maintenance procedure. Corruption or an incomplete final record blocks startup instead of silently discarding it. Protect journal contents: player names and match data may be stored in plaintext; credentials are stripped by the GSI normalizer. This is single-process, synchronous local persistence, **not** a distributed durable log or a guarantee against physical storage failure. No concurrent writers are supported.

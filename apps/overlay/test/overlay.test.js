@@ -210,3 +210,16 @@ test('GSI phase timer reaches read-only OBS API through the real HTTP path', asy
   now = 2001;
   assert.deepEqual(await (await fetch(endpoint)).json(), { status: 'unavailable' });
 });
+
+test('world positions remain private until map transforms and viewer permissions exist', () => {
+  const projected = createPublicScoreboard({
+    freshness: { source: { status: 'live' } },
+    snapshots: { source: { map: { name: 'de_inferno' },
+      players: [{ team: 'CT', name: 'Radar A',
+        position: [566.21, 374.87, 1.41], forward: [0.25, 0.97, -0.01] }] } },
+  });
+  assert.equal(projected.players.length, 1);
+  assert.equal(Object.hasOwn(projected.players[0], 'position'), false);
+  assert.equal(Object.hasOwn(projected.players[0], 'forward'), false);
+  assert.equal(JSON.stringify(projected).includes('566.21'), false);
+});

@@ -20,6 +20,27 @@ function safeNumber(value) {
 }
 
 /**
+ * GSI spectator vectors are comma-separated x,y,z strings.
+ * Reject malformed, non-finite and implausibly large coordinates.
+ */
+export function parseSpectatorVector(value) {
+  if (typeof value !== 'string' || value.length > 96) return null;
+  const parts = value.split(',');
+  if (parts.length !== 3) return null;
+  const values = [];
+  for (const part of parts) {
+    const cleaned = part.trim();
+    if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d{1,2})?$/.test(cleaned)) {
+      return null;
+    }
+    const number = Number(cleaned);
+    if (!Number.isFinite(number) || Math.abs(number) > 100_000) return null;
+    values.push(number);
+  }
+  return values;
+}
+
+/**
  * Normalize a conservative, documented subset of GSI fields.
  * Absent data is omitted instead of fabricated.
  * This function does not infer rounds, timings, or operator permissions.
@@ -139,6 +160,12 @@ export function normalizeGsiSnapshot(input) {
         player.activeWeapon = activeWeapon;
         player.utilityCount = utilityCount;
       }
+      // Position coordinates remain internal until a verified map-specific
+      // transform and spectator-safe projection are available.
+      const position = parseSpectatorVector(entry.position);
+      const forward = parseSpectatorVector(entry.forward);
+      if (position !== null) player.position = position;
+      if (forward !== null) player.forward = forward;
       players.push(player);
       if (players.length >= 10) break;
     }

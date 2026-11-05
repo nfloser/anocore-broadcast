@@ -30,3 +30,7 @@ For in-process consumers, import `createBroadcastRuntime` from `services/engine/
 The HTTP API intentionally has **no match-state output endpoint**: raw observer data may be privileged. A properly authenticated and permission-filtered transport for the OBS renderer is future work. When the engine refuses a message (for example due to its bounded capacity), the endpoint responds with HTTP 503, and the ingest sequence does not advance. Long-running ingestion still needs durable storage and an explicit recovery policy.
 
 Integration tests cover authenticated HTTP POST through the real receiver into the timeline and delayed or stale read behavior. Testing on an actual CS2 observer PC remains outstanding.
+
+## Spectator position telemetry (radar foundation)
+
+The sample GSI configuration subscribes to `allplayers_position`. The adapter validates three-coordinate position and forward vectors and retains them **inside** the match engine only. Neither world coordinates nor direction vectors are present in the OBS browser-state API yet. A radar needs verified map origin, scale, rotation, floor and observer-timeline alignment; otherwise a drawn marker could be dangerously misleading. Do not expose raw observer coordinates to player clients or public HTTP endpoints. This has only been exercised with fixture data, not confirmed in a live CS2 spectator session.

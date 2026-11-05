@@ -93,3 +93,7 @@ test('HTTP handles valid payload, malformed JSON, access control and stale statu
   assert.equal(health.status, 'stale');
   assert.equal((await post(' '.repeat(256 * 1024 + 1))).status, 413);
 });
+
+test('rejects source identifiers that cannot fit into envelope event IDs', () => {
+  assert.throws(() => createGsiIngest({ matchId: 'match-1', sourceId: 's'.repeat(110), token }));
+});

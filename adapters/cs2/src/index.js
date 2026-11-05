@@ -96,7 +96,7 @@ export function normalizeGsiSnapshot(input) {
 /** Reduces GSI notifications to one explicitly session-scoped snapshot envelope. */
 export function createGsiIngest({ matchId, sourceId = 'observer-1', token, onEvent = () => {},
   staleAfterMs = DEFAULT_STALE_AFTER_MS, clock = () => Date.now() }) {
-  if (!MATCH_ID_PATTERN.test(matchId ?? '') || !MATCH_ID_PATTERN.test(sourceId)) {
+  if (!MATCH_ID_PATTERN.test(matchId ?? '') || !MATCH_ID_PATTERN.test(sourceId) || sourceId.length > 105) {
     throw new TypeError('matchId and sourceId must be valid IDs');
   }
   if (typeof token !== 'string' || Buffer.byteLength(token) < 16) {

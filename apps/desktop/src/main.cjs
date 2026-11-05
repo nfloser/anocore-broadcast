@@ -2,7 +2,7 @@
 const { app, BrowserWindow, Menu, clipboard, dialog, session, ipcMain } = require('electron');
 const { pathToFileURL } = require('node:url');
 const { join } = require('node:path');
-const { mkdirSync, writeFileSync } = require('node:fs');
+const { mkdirSync } = require('node:fs');
 
 let window = null;
 let controlsWindow = null;
@@ -93,9 +93,41 @@ async function openControls() {
 async function exportGsiConfig() {
   const current = modeManager?.current;
   if (current?.mode !== 'live' || switching) return;
+  const { discoverCs2ConfigDirectories } = await import(pathToFileURL(
+    join(__dirname, 'steam-discovery.js')
+  ).href);
+  const { saveObserverConfig, CS2_GSI_FILENAME } = await import(pathToFileURL(
+    join(__dirname, 'gsi-save.js')
+  ).href);
+  const detected = discoverCs2ConfigDirectories();
+  let targetDirectory = app.getPath('documents');
+  if (detected.length === 1) {
+    const selected = await dialog.showMessageBox(window, {
+      type: 'question',
+      message: 'Counter-Strike 2 installation detected',
+      detail: 'Use this CS2 cfg folder?\n' + detected[0] +
+        '\n\nThe file will only be saved after you confirm in the next dialog.',
+      buttons: ['Use detected CS2 folder', 'Choose manually', 'Cancel'],
+      defaultId: 0, cancelId: 2, noLink: true,
+    });
+    if (selected.response === 2) return;
+    if (selected.response === 0) targetDirectory = detected[0];
+  } else if (detected.length > 1) {
+    const candidates = detected.slice(0, 5);
+    const selected = await dialog.showMessageBox(window, {
+      type: 'question',
+      message: 'Multiple CS2 installations detected',
+      detail: candidates.map((path, i) => (i + 1) + '. ' + path).join('\n') +
+        '\n\nChoose the matching installation or browse manually.',
+      buttons: [...candidates.map((_, i) => 'Library ' + (i + 1)), 'Choose manually', 'Cancel'],
+      cancelId: candidates.length + 1, noLink: true,
+    });
+    if (selected.response === candidates.length + 1) return;
+    if (selected.response < candidates.length) targetDirectory = candidates[selected.response];
+  }
   const result = await dialog.showSaveDialog(window, {
     title: "Save this session's CS2 GSI configuration",
-    defaultPath: join(app.getPath('documents'), 'gamestate_integration_anocore.cfg'),
+    defaultPath: join(targetDirectory, CS2_GSI_FILENAME),
     buttonLabel: 'Save GSI configuration',
     filters: [{ name: 'CS2 GSI configuration', extensions: ['cfg'] }],
   });
@@ -105,9 +137,7 @@ async function exportGsiConfig() {
   try {
     // CS2 requires a plaintext token inside the user's explicitly exported
     // CFG. Never place it in HUD, frontend IPC, logs or persistent app settings.
-    writeFileSync(result.filePath, current.getGsiConfig(), {
-      encoding: 'utf8', flag: 'wx', mode: 0o600,
-    });
+    saveObserverConfig(result.filePath, current.getGsiConfig());
     dialog.showMessageBoxSync(window, {
       type: 'info',
       message: 'CS2 observer configuration saved.',

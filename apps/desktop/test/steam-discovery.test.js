@@ -64,10 +64,11 @@ test('rejects missing, misleading or symlinked CS2 installations', t => {
 test('explicit config export refuses overwrite and never changes existing secrets', t => {
   const root = fixture(t);
   const file = join(root, 'gamestate_integration_anocore.cfg');
-  const config = '"auth" { "token" "one-time-key" }';
+  const config = '"gamestate_integration_anocore" { "auth" { "token" "one-time-key" } }';
   saveObserverConfig(file, config);
   assert.equal(readFileSync(file, 'utf8'), config);
   assert.throws(() => saveObserverConfig(file, '"new-key"'));
   assert.equal(readFileSync(file, 'utf8'), config);
   assert.equal(readFileSync(file, 'utf8').includes('new-key'), false);
+  assert.throws(() => saveObserverConfig(join(root, 'other.cfg'), config));
 });

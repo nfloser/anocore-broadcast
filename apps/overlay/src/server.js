@@ -27,7 +27,16 @@ export function createOverlayServer({ scoreboard, host = '127.0.0.1', port = 300
       respond(405, 'text/plain; charset=utf-8', 'Method not allowed');
       return;
     }
-    if (request.url === '/api/state') {
+    // Compare only the pathname. ChatGPT/OBS links may contain harmless
+    // tracking parameters; unknown pathnames must still return 404.
+    let pathname;
+    try {
+      pathname = new URL(request.url, 'http://127.0.0.1').pathname;
+    } catch {
+      respond(400, 'text/plain; charset=utf-8', 'Bad request');
+      return;
+    }
+    if (pathname === '/api/state') {
       try {
         const state = scoreboard();
         respond(200, 'application/json; charset=utf-8', JSON.stringify(state));
@@ -41,7 +50,7 @@ export function createOverlayServer({ scoreboard, host = '127.0.0.1', port = 300
       '/overlay.css': ['text/css; charset=utf-8', stylesheet],
       '/overlay.js': ['text/javascript; charset=utf-8', script],
     };
-    const file = staticFiles[request.url];
+    const file = Object.hasOwn(staticFiles, pathname) ? staticFiles[pathname] : null;
     if (!file) {
       respond(404, 'text/plain; charset=utf-8', 'Not found');
       return;

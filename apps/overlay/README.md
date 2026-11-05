@@ -4,7 +4,7 @@ This is a *minimal working scoreboard*, not a full ten-player broadcast HUD. It 
 
 ## Preview without CS2
 
-Run `npm run demo` from the repository root. Open `http://127.0.0.1:3009/` in a browser or OBS Browser Source (1920 × 500). The app sends synthetic 5v5 match fixtures through the normal local authenticated GSI receiver and updates approximately every two seconds. A permanent red **DEMO · SYNTHETIC DATA** marker identifies the simulated output. It is not a live CS2 feed. The demo includes a clearly marked abstract radar grid driven by fake spectator world coordinates through the tested map transform, not a calibrated Nuke map. Set `ANOCORE_ADMIN_TOKEN` (32+ bytes) before `npm run demo` to also enable the local operator panel at `http://127.0.0.1:3010/`, using the same controls as live mode. Optional `ANOCORE_MANAGER_CONFIG_PATH` retains the demo layout across restarts. The demo is an operator visual preview and an end-to-end test aid, not broadcast-ready production software.
+Run `npm run demo` from the repository root. Open `http://127.0.0.1:3009/` in a browser or OBS Browser Source (1920 × 1080). The app sends synthetic 5v5 match fixtures through the normal local authenticated GSI receiver and updates approximately every two seconds. A permanent red **DEMO · SYNTHETIC DATA** marker identifies the simulated output. It is not a live CS2 feed. The demo includes a clearly marked abstract radar grid driven by fake spectator world coordinates through the tested map transform, not a calibrated Nuke map. Set `ANOCORE_ADMIN_TOKEN` (32+ bytes) before `npm run demo` to also enable the local operator panel at `http://127.0.0.1:3010/`, using the same controls as live mode. Optional `ANOCORE_MANAGER_CONFIG_PATH` retains the demo layout across restarts. The demo is an operator visual preview and an end-to-end test aid, not broadcast-ready production software.
 
 ## Start locally
 
@@ -17,7 +17,7 @@ Run `npm run demo` from the repository root. Open `http://127.0.0.1:3009/` in a 
    $env:ANOCORE_BROADCAST_DELAY_MS="0"
    npm run broadcast
    ```
-4. In OBS add a **Browser Source**, URL `http://127.0.0.1:3009/`, width 1920, height 500. Place it at the top of the scene.
+4. In OBS add a **Browser Source**, URL `http://127.0.0.1:3009/`, width 1920, height 1080. Place it at the top of the scene.
 5. Check `http://127.0.0.1:3008/health` for GSI freshness. The scoreboard shows unavailable until matching GSI arrives.
 
 The configured delay is only a local read gate, not verified synchronization with GOTV/OBS video. Observe the source delay before going live. The scoreboard currently shows CT/T side scores, map, round and limited round/bomb status where GSI provides them. It can show basic ten-player panels when spectator data is available, but not verified team identities, exact round clock, radar, all weapons, killfeed, replay or operator controls. Those require further adapters and real CS2 tests.
@@ -48,3 +48,9 @@ The GSI sample configuration now requests `allplayers_weapons`. When the spectat
 ## Reported spectator phase timer
 
 The CS2 observer configuration subscribes to `phase_countdowns`. Where present, the browser HUD displays the reported `phase_ends_in` as `GSI TIMER` (minutes and seconds). It is refreshed with GSI snapshots, not a continuously interpolated local clock, and is removed when data becomes stale. It is **not** guaranteed to match the OBS/GOTV video frame; production-quality synchronization still requires a measured broadcast clock and real CS2 observation testing.
+
+## Broadcast HUD design (second iteration)
+
+The scoreboard, team rosters and synthetic demo radar share a unified broadcast stage. The 1920×1080 OBS source uses a transparent background, grouped data hierarchy, prominent side scores, readable equipment and HP bars, an integrated radar preview, fallbacks for missing observer data, and reduced-motion support. The radar remains an **abstract synthetic demo grid** and does not automatically become a live-world-position renderer. Use a local browser to check legibility at the actual OBS output size and verify appearance before use on stream.
+
+Tracking query parameters such as `?utm_source=chatgpt.com` are safely ignored for known static HUD routes; unknown paths continue returning 404.

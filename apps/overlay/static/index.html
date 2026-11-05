@@ -11,19 +11,19 @@
 <main aria-label="CS2 broadcast scoreboard">
   <div id="demo-mark" class="demo-mark" hidden>DEMO · SYNTHETIC DATA</div>
   <section id="board" class="board is-unavailable" aria-live="polite">
-    <div class="team team-ct"><span class="side">COUNTER-TERRORISTS</span><strong id="ct-score">—</strong></div>
+    <div class="team team-ct"><span id="ct-name" class="side">COUNTER-TERRORISTS</span><strong id="ct-score">—</strong></div>
     <div class="center">
       <div class="brand">ANOCORE <span>BROADCAST</span></div>
       <div id="map" class="map">NO LIVE MATCH</div>
       <div id="round" class="round">WAITING FOR DATA</div>
       <div id="phase" class="phase"></div>
     </div>
-    <div class="team team-t"><strong id="t-score">—</strong><span class="side">TERRORISTS</span></div>
+    <div class="team team-t"><strong id="t-score">—</strong><span id="t-name" class="side">TERRORISTS</span></div>
   </section>
   <div id="notice" role="status" class="notice">WAITING FOR LIVE DATA</div>
   <section id="roster" class="roster" aria-label="Live player roster" hidden>
-    <div class="roster-side ct-roster"><h2>COUNTER-TERRORISTS</h2><div id="ct-players" class="player-list"></div></div>
-    <div class="roster-side t-roster"><h2>TERRORISTS</h2><div id="t-players" class="player-list"></div></div>
+    <div class="roster-side ct-roster"><h2 id="ct-roster-name">COUNTER-TERRORISTS</h2><div id="ct-players" class="player-list"></div></div>
+    <div class="roster-side t-roster"><h2 id="t-roster-name">TERRORISTS</h2><div id="t-players" class="player-list"></div></div>
   </section>
   <div id="roster-notice" class="roster-notice" hidden>PLAYER DATA NOT AVAILABLE FROM OBSERVER</div>
 </main>

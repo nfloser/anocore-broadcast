@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createBroadcastSettings } from '../src/settings.js';
 import { createManagerServer } from '../src/server.js';
+import { createOverlayServer } from '../../overlay/src/server.js';
 
 const token = 'operator-secret-01234567890123456789';
 test('setting changes are validated and atomically applied', () => {
@@ -59,4 +60,37 @@ test('operator HTTP contract rejects unauthorized and cross-origin mutations', a
   const response = await fetch(base + '/api/config', { headers: auth });
   assert.equal(JSON.stringify(await response.json()).includes(token), false);
   assert.equal(response.headers.get('access-control-allow-origin'), null);
+});
+
+test('operator controls immediately affect the read-only OBS state without a restart', async t => {
+  const settings = createBroadcastSettings();
+  const overlay = createOverlayServer({
+    port: 0,
+    scoreboard: () => {
+      const config = settings.get();
+      return { status: 'live', ctScore: 2, tScore: 1,
+        settings: config, players: config.showRoster ? [{ name: 'Nille', team: 'CT' }] : [] };
+    },
+  });
+  const observer = await overlay.listen();
+  t.after(() => overlay.close());
+  const manager = createManagerServer({ settings, token, port: 0 });
+  const operator = await manager.listen();
+  t.after(() => manager.close());
+  const overlayUrl = 'http://127.0.0.1:' + observer.port + '/api/state';
+  const opUrl = 'http://127.0.0.1:' + operator.port;
+  assert.equal((await (await fetch(overlayUrl)).json()).players.length, 1);
+  const updated = await fetch(opUrl + '/api/config', {
+    method: 'POST',
+    headers: {
+      authorization: 'Bearer ' + token, origin: opUrl,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ ctName: 'Team Alpha', showRoster: false }),
+  });
+  assert.equal(updated.status, 200);
+  const projected = await (await fetch(overlayUrl)).json();
+  assert.equal(projected.settings.ctName, 'Team Alpha');
+  assert.deepEqual(projected.players, []);
+  assert.equal(JSON.stringify(projected).includes(token), false);
 });

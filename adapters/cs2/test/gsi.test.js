@@ -160,3 +160,15 @@ test('weapon traversal and grenade counts remain bounded', () => {
   }
   assert.equal(normalizeGsiSnapshot(raw).players[0].utilityCount, 8);
 });
+
+test('normalizes finite, bounded spectator phase countdown only', () => {
+  const raw = fixture();
+  raw.phase_countdowns = { phase: 'live', phase_ends_in: 91.25, secret: 'hidden' };
+  const state = normalizeGsiSnapshot(raw);
+  assert.deepEqual(state.phaseCountdown, { phase: 'live', seconds: 91.25 });
+  assert.equal(JSON.stringify(state).includes('hidden'), false);
+  for (const remaining of [-1, 700, Infinity, NaN, '90']) {
+    raw.phase_countdowns.phase_ends_in = remaining;
+    assert.equal(normalizeGsiSnapshot(raw).phaseCountdown.seconds, undefined);
+  }
+});

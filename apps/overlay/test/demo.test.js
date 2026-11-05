@@ -17,6 +17,7 @@ test('demo fixture is deterministic, has ten players and no real steam credentia
   assert.equal(payload.players.filter(p => p.team === 'T').length, 5);
   assert.equal(frame.auth.token, 'fixture-secret');
   assert.equal(payload.map.name, 'de_nuke');
+  assert.equal(payload.phaseCountdown.seconds, 85);
   assert.equal(payload.players[0].activeWeapon, 'weapon_awp');
   assert.equal(payload.players[0].utilityCount, 2);
   assert.throws(() => createDemoFrame(-1, 'x'));
@@ -49,6 +50,7 @@ test('synthetic HTTP GSI drives a clearly marked demo scoreboard', async t => {
   assert.equal(after.players[0].activeWeapon, 'weapon_awp');
   assert.equal(after.players[0].utilityCount, 2);
   assert.equal(after.map, 'de_nuke');
+  assert.equal(after.countdownSeconds, 85);
   assert.equal(JSON.stringify(after).includes(token), false);
 });
 

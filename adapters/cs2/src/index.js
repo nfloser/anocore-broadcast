@@ -60,6 +60,17 @@ export function normalizeGsiSnapshot(input) {
     }
   }
 
+  if (isRecord(input.phase_countdowns)) {
+    const phase = safeString(input.phase_countdowns.phase, 32);
+    const remaining = input.phase_countdowns.phase_ends_in;
+    snapshot.phaseCountdown = {};
+    if (phase !== undefined) snapshot.phaseCountdown.phase = phase;
+    if (typeof remaining === 'number' && Number.isFinite(remaining) &&
+        remaining >= 0 && remaining <= 600) {
+      snapshot.phaseCountdown.seconds = remaining;
+    }
+  }
+
   if (isRecord(input.round)) {
     snapshot.round = {};
     for (const key of ['phase', 'win_team', 'bomb']) {

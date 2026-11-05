@@ -26,6 +26,7 @@ export function createPublicScoreboard(timelineView) {
   const map = snapshot.map ?? {};
   const round = snapshot.round ?? {};
   const bomb = snapshot.bomb ?? {};
+  const countdown = snapshot.phaseCountdown ?? {};
   const players = Array.isArray(snapshot.players) ?
     snapshot.players.filter(player => player && (player.team === 'CT' || player.team === 'T'))
       .slice(0, 10).map(player => ({
@@ -53,6 +54,10 @@ export function createPublicScoreboard(timelineView) {
     tScore: score(map.tScore),
     roundPhase: label(round.phase),
     bombState: label(bomb.state),
+    countdownPhase: label(countdown.phase, 32),
+    countdownSeconds: typeof countdown.seconds === 'number' &&
+      Number.isFinite(countdown.seconds) &&
+      countdown.seconds >= 0 && countdown.seconds <= 600 ? countdown.seconds : null,
     players,
   };
 }

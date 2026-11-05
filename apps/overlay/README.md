@@ -44,3 +44,7 @@ The optional versioned JSON file contains only public HUD settings, never the op
 ## Equipment from observer GSI
 
 The GSI sample configuration now requests `allplayers_weapons`. When the spectator receives the weapons dictionary, the roster shows the weapon marked `active` and a bounded count of entries marked `type: Grenade`. Without a weapons dictionary, both fields are explicitly unknown; an empty inventory reports zero utility. No skins, raw inventory, ammo data, SteamIDs or other arbitrary fields are returned to the browser. Verify live data against an actual CS2 observer before relying on this display in a production broadcast.
+
+## Reported spectator phase timer
+
+The CS2 observer configuration subscribes to `phase_countdowns`. Where present, the browser HUD displays the reported `phase_ends_in` as `GSI TIMER` (minutes and seconds). It is refreshed with GSI snapshots, not a continuously interpolated local clock, and is removed when data becomes stale. It is **not** guaranteed to match the OBS/GOTV video frame; production-quality synchronization still requires a measured broadcast clock and real CS2 observation testing.

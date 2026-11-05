@@ -7,6 +7,6 @@
   "workspaces": ["packages/*", "adapters/*", "services/*"],
   "scripts": {
     "test": "node --test",
-    "check": "node --check packages/protocol/src/index.js && node --check packages/protocol/test/protocol.test.js && node --check adapters/cs2/src/index.js && node --check adapters/cs2/src/start.js && node --check adapters/cs2/test/gsi.test.js && node --check services/engine/src/index.js && node --check services/engine/test/timeline.test.js"
+    "check": "node --check packages/protocol/src/index.js && node --check packages/protocol/test/protocol.test.js && node --check adapters/cs2/src/index.js && node --check adapters/cs2/src/start.js && node --check adapters/cs2/test/gsi.test.js && node --check services/engine/src/index.js && node --check services/engine/test/timeline.test.js && node --check services/engine/src/runtime.js && node --check services/engine/test/runtime.test.js"
   }
 }

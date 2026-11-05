@@ -1,20 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { createGsiIngest, createGsiServer } from './index.js';
+import { createBroadcastRuntime } from '../../../services/engine/src/runtime.js';
 
-const token = process.env.ANOCORE_GSI_TOKEN;
-const matchId = process.env.ANOCORE_MATCH_ID;
-const ingest = createGsiIngest({
-  matchId,
-  token,
+const runtime = createBroadcastRuntime({
+  matchId: process.env.ANOCORE_MATCH_ID,
+  token: process.env.ANOCORE_GSI_TOKEN,
   sourceId: 'observer-1',
-  onEvent: (event) => {
-    // Deliberately log only a concise envelope summary, not private player data.
-    process.stdout.write(JSON.stringify({
-      eventId: event.eventId, matchId: event.matchId,
-      type: event.type, occurredAt: event.occurredAt,
-    }) + '\n');
-  },
+  delayMs: Number(process.env.ANOCORE_BROADCAST_DELAY_MS ?? 0),
 });
-const receiver = createGsiServer(ingest);
-const address = await receiver.listen();
-process.stdout.write(`GSI receiver listening on ${address.address}:${address.port}; run id ${randomUUID()}\n`);
+const address = await runtime.listen();
+process.stdout.write(`GSI receiver and timeline listening on ${address.address}:${address.port}; run id ${randomUUID()}\n`);
+process.stdout.write('Read-only timeline is currently available in-process only; no broadcast-facing HTTP endpoint is exposed.\n');

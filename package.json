@@ -1,0 +1,12 @@
+{
+  "name": "anocore-broadcast",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check packages/protocol/src/index.js && node --check packages/protocol/test/protocol.test.js"
+  }
+}

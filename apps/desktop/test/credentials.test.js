@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createObserverCredentialStore } from '../src/credentials.js';
@@ -77,7 +77,9 @@ test('observer key reset requires explicit action and cannot delete symlinks', t
   const dir = join(path, '..');
   const target = join(dir, 'untouched.txt');
   writeFileSync(target, 'do not alter');
-  const link = join(dir, 'linked-key.json');
+  const linkDir = join(dir, 'symlink-dir');
+  mkdirSync(linkDir);
+  const link = join(linkDir, 'observer-credential.json');
   symlinkSync(target, link);
   const linkedStore = createObserverCredentialStore({ filePath: link, encryption: encrypted });
   assert.throws(() => linkedStore.getOrCreate(), /saved observer key/i);

@@ -8,7 +8,8 @@ AnoCore Broadcast is a standalone product, not a submodule of the gameserver. An
 - CS2 observer GSI HTTP receiver in `adapters/cs2`: loopback binding, required shared secret, bounded JSON body, conservative normalization into `observer.snapshot` events, in-memory sequence and source freshness.
 - Deterministic in-memory `observer.snapshot` timeline in `services/engine` with strict source sequence handling, duplicate suppression, gap degradation, bounded history and delayed read cutoff.
 - Local composition in `services/engine/src/runtime.js` connects authenticated GSI HTTP POSTs to the timeline and rejects ingestion if the engine cannot commit an event.
-- Optional synchronous segmented JSONL journal writes committed events before acknowledging GSI; automatic numbered segment rotation preserves ordered replay and a bounded aggregate size, with source-local sequence recovery after restart. The CLI starts this composed runtime. Tests exercise the complete HTTP-to-engine path.
+- Optional synchronous segmented JSONL journal writes committed events before acknowledging GSI; automatic numbered segment rotation preserves ordered replay and a bounded aggregate size, with source-local sequence recovery after restart.
+- Explicit journal **integrity checkpoints** record SHA-256 digests of committed prefixes and verify them on restart. These are not state snapshots or permission to delete event history. The CLI starts this composed runtime. Tests exercise the complete HTTP-to-engine path.
 - Automated regression tests for malformed, unauthorized, oversized, disconnected/stale, duplicate, reordered and delayed-input cases.
 
 ## Planned

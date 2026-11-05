@@ -19,6 +19,10 @@ Independent CS2 broadcast production suite. The goal is a configurable and relia
 - `apps/overlay` — initial OBS HUD with an allowlisted spectator roster (**initial implementation**).
 - `apps/manager` — operator controls (**planned**).
 
+## Quick preview
+
+Run `npm run demo`, then open `http://127.0.0.1:3009/`. The viewer visibly marks the generated content as **DEMO** and runs entirely on localhost. For real CS2 ingest see the [OBS quickstart](apps/overlay/README.md).
+
 ## Checks
 
 Requires Node.js 22+:

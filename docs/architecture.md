@@ -14,6 +14,9 @@ AnoCore Broadcast is a standalone product, not a submodule of the gameserver. An
 
 - Loopback-only read-only scoreboard server projects a small allowlisted subset of delayed state to OBS. The expanded read-only projection may include broadcast player names, health, money and stats from spectator GSI; SteamIDs, arbitrary weapons and authentication secrets are not available from its endpoint. It remains loopback-only and must not be exposed to players.
 
+## Position telemetry boundary
+The observer GSI adapter can ingest and strictly parse `allplayers_position` and `forward` as finite three-dimensional world-space vectors. These values stay in the internal normalized observer payload and are deliberately **not** exposed through the public OBS projection. Map-specific coordinate calibration, orientation, altitude layering, latency verification and spectator-only access rules must be implemented and tested before introducing radar graphics. The sender is subject to GSI's own observer visibility rules, and this project must not create a player-facing position leak.
+
 ## Planned\n- Type-specific payload schemas, an authenticated read API for approved broadcast operators, and secure runtime lifecycle management.
 - Production-grade journal lifecycle: rotation, recovery after partial writes, cross-process locking, bounded memory, and resilience to disk failures. The initial single-process write-ahead journal is optional and experimental.
 - Broadcast clock alignment validated against video and GOTV delay; current time gate and displayed GSI-reported phase timer alone are insufficient.

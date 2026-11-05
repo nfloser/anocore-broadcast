@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createGsiIngest, createGsiServer, normalizeGsiSnapshot } from '../src/index.js';
+import { createGsiIngest, createGsiServer, normalizeGsiSnapshot, parseSpectatorVector } from '../src/index.js';
 
 const token = 'test-secret-0123456789';
 const fixture = () => ({
@@ -171,4 +171,37 @@ test('normalizes finite, bounded spectator phase countdown only', () => {
     raw.phase_countdowns.phase_ends_in = remaining;
     assert.equal(normalizeGsiSnapshot(raw).phaseCountdown.seconds, undefined);
   }
+});
+
+test('spectator vector parser handles valid world positions and rejects unsafe values', () => {
+  assert.deepEqual(parseSpectatorVector(' -400.00, -150.00, -0.50 '), [-400, -150, -0.5]);
+  assert.deepEqual(parseSpectatorVector('0,1.2,+3'), [0, 1.2, 3]);
+  for (const invalid of [
+    null, 1, '', '1,2', '1,2,3,4', '1,,3', '1,Infinity,3',
+    '1,NaN,3', '1e309,2,3', '100001,0,0', '1;2;3',
+    '1,2,0<script>', '1'.repeat(97) + ',2,3',
+  ]) {
+    assert.equal(parseSpectatorVector(invalid), null);
+  }
+});
+
+test('spectator positions normalize without steam IDs or raw strings', () => {
+  const raw = fixture();
+  raw.allplayers = {
+    '76561198000000001': {
+      team: 'CT', name: 'Radar A', position: '566.21, 374.87, 1.41',
+      forward: '0.25, 0.97, -0.01', other: 'private',
+    },
+    '76561198000000002': {
+      team: 'T', name: 'Radar B', position: 'Infinity, 2, 3',
+      forward: 'broken',
+    },
+  };
+  const normalized = normalizeGsiSnapshot(raw);
+  assert.deepEqual(normalized.players[0].position, [566.21, 374.87, 1.41]);
+  assert.deepEqual(normalized.players[0].forward, [0.25, 0.97, -0.01]);
+  assert.equal(normalized.players[1].position, undefined);
+  assert.equal(normalized.players[1].forward, undefined);
+  assert.equal(JSON.stringify(normalized).includes('76561198000000001'), false);
+  assert.equal(JSON.stringify(normalized).includes('private'), false);
 });

@@ -33,6 +33,9 @@ jobs:
         run: npm test
       - name: Build portable Windows x64 preview
         run: npm run package:win
+      - name: Smoke test packaged Electron desktop startup and shutdown
+        shell: pwsh
+        run: ./apps/desktop/scripts/smoke-windows.ps1
       - name: Create SHA-256 checksums
         shell: pwsh
         run: |

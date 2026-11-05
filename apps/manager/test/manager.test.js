@@ -3,6 +3,9 @@ import test from 'node:test';
 import { createBroadcastSettings } from '../src/settings.js';
 import { createManagerServer } from '../src/server.js';
 import { createOverlayServer } from '../../overlay/src/server.js';
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const token = 'operator-secret-01234567890123456789';
 test('setting changes are validated and atomically applied', () => {
@@ -93,4 +96,43 @@ test('operator controls immediately affect the read-only OBS state without a res
   assert.equal(projected.settings.ctName, 'Team Alpha');
   assert.deepEqual(projected.players, []);
   assert.equal(JSON.stringify(projected).includes(token), false);
+});
+
+test('operator configuration round-trips through a versioned private file', t => {
+  const dir = mkdtempSync(join(tmpdir(), 'anocore-operator-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const filePath = join(dir, 'operator.json');
+  const first = createBroadcastSettings({ filePath });
+  first.update({ ctName: 'Team One', showRoster: false, tColor: '#11aa99' });
+  const persisted = readFileSync(filePath, 'utf8');
+  assert.equal(persisted.includes('Team One'), true);
+  assert.equal(persisted.includes(token), false);
+  const reopened = createBroadcastSettings({ filePath });
+  assert.deepEqual(reopened.get(), first.get());
+  reopened.update({ ctName: 'Updated' });
+  assert.equal(createBroadcastSettings({ filePath }).get().ctName, 'Updated');
+});
+
+test('refuses corrupted and unsupported operator configs rather than guessing defaults', t => {
+  const dir = mkdtempSync(join(tmpdir(), 'anocore-operator-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const filePath = join(dir, 'operator.json');
+  writeFileSync(filePath, '{broken');
+  assert.throws(() => createBroadcastSettings({ filePath }), /Invalid operator configuration file/);
+  writeFileSync(filePath, JSON.stringify({
+    schemaVersion: 1, settings: { ctName: '<script>' },
+  }));
+  assert.throws(() => createBroadcastSettings({ filePath }), /Invalid operator configuration file/);
+  writeFileSync(filePath, JSON.stringify({
+    schemaVersion: 2, settings: {},
+  }));
+  assert.throws(() => createBroadcastSettings({ filePath }), /Invalid operator configuration file/);
+});
+
+test('failed persistence does not change in-memory configuration', () => {
+  const filePath = join(tmpdir(), 'no-such-directory-' + Date.now(), 'settings.json');
+  const settings = createBroadcastSettings({ filePath });
+  const before = settings.get();
+  assert.throws(() => settings.update({ ctName: 'Changed' }));
+  assert.deepEqual(settings.get(), before);
 });

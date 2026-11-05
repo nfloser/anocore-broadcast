@@ -33,4 +33,10 @@ $env:ANOCORE_ADMIN_TOKEN="PUT_A_DIFFERENT_RANDOM_32_BYTE_SECRET_HERE"
 npm run broadcast
 ```
 
-Open `http://127.0.0.1:3010/`, enter the token and click **Connect**. You can configure CT/T labels, colors and roster visibility. Changes appear in OBS without restarting the receiver. They are currently **in-memory only** and revert after restarting the process. Do not reuse the GSI token as an operator token. The manager is disabled if the environment variable is absent, binds only to loopback and rejects cross-origin writes. Never expose its port outside the observer machine.
+Open `http://127.0.0.1:3010/`, enter the token and click **Connect**. You can configure CT/T labels, colors and roster visibility. Changes appear in OBS without restarting the receiver. By default changes are in memory and revert after a restart. To enable persistence, set a private local file path before starting:
+
+```powershell
+$env:ANOCORE_MANAGER_CONFIG_PATH="$HOME\\anocore-broadcast-operator.json"
+```
+
+The optional versioned JSON file contains only public HUD settings, never the operator or GSI tokens. It is created after a successful settings change. Existing malformed files abort startup rather than silently discarding your layout. Back up the file before upgrades; avoid network shares and concurrent writers. Do not reuse the GSI token as an operator token. The manager is disabled if the environment variable is absent, binds only to loopback and rejects cross-origin writes. Never expose its port outside the observer machine.

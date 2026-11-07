@@ -19,3 +19,15 @@ export function summarizeConnection({ mode, connection, ageMs } = {}) {
     ageSeconds: Math.min(86400, Math.floor(ageMs / 1000)),
   };
 }
+
+/**
+ * Coarse, identity-free assessment of how much *public* HUD data is present.
+ * This is not a claim of correct or synchronized CS2/GOTV information.
+ */
+export function summarizeScoreboardCoverage(scoreboard) {
+  if (scoreboard?.status !== 'live') return 'unavailable';
+  if (typeof scoreboard.map === 'string' && scoreboard.map.trim().length > 0 &&
+      scoreboard.round != null &&
+      scoreboard.ctScore != null && scoreboard.tScore != null) return 'scoreboard';
+  return 'partial';
+}

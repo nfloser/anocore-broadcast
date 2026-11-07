@@ -4,7 +4,7 @@ import { createPublicScoreboard } from '../../overlay/src/public-state.js';
 import { createOverlayServer } from '../../overlay/src/server.js';
 import { createBroadcastSettings } from '../../manager/src/settings.js';
 import { createObserverConfig } from './gsi-config.js';
-import { summarizeConnection } from './connection-diagnostics.js';
+import { summarizeConnection, summarizeScoreboardCoverage } from './connection-diagnostics.js';
 import { createSafeObserverReport } from './safe-observer-report.js';
 
 /**
@@ -65,6 +65,7 @@ export async function startDesktopLive({
         return {
           mode: 'live', connection: status, ageMs,
           diagnostics: summarizeConnection({ mode: 'live', connection: status, ageMs }),
+          scoreboardCoverage: summarizeScoreboardCoverage(createPublicScoreboard(runtime.view())),
         };
       },
       async close() {

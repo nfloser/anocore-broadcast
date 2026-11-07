@@ -1,4 +1,4 @@
-const ids = ['controls', 'ctName', 'tName', 'ctColor', 'tColor', 'showRoster', 'apply', 'message', 'session-status', 'session-help', 'session-panel', 'session-age', 'setup-demo', 'setup-live', 'setup-export', 'setup-obs', 'setup-result', 'setup-diagnostics'];
+const ids = ['controls', 'ctName', 'tName', 'ctColor', 'tColor', 'showRoster', 'apply', 'message', 'session-status', 'session-help', 'session-panel', 'session-age', 'session-coverage', 'setup-demo', 'setup-live', 'setup-export', 'setup-obs', 'setup-result', 'setup-diagnostics'];
 const elements = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 const fields = ['ctName', 'tName', 'ctColor', 'tColor', 'showRoster'];
 function showStatus(message) { elements.message.textContent = message; }
@@ -71,6 +71,12 @@ function displayConnection(state) {
     age === null || code === 'waiting' || code === 'demo' ?
       'No authenticated update timestamp available' :
       'Last authenticated GSI update: ' + age + ' s ago';
+  const coverage = ['scoreboard', 'partial', 'unavailable'].includes(state?.scoreboardCoverage) ?
+    state.scoreboardCoverage : 'unavailable';
+  elements['session-coverage'].textContent = code === 'connected' ?
+    coverage === 'scoreboard' ? 'HUD: map, round and both scores reported (not independently verified)' :
+    'HUD: incomplete scoreboard data despite receiving GSI updates' :
+    'HUD: live scoreboard unavailable';
   elements['session-panel'].dataset.connection = code;
   if (!setupBusy) {
     elements['setup-export'].disabled = state?.mode !== 'live';

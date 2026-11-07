@@ -78,6 +78,7 @@ test('independent CS2-shaped observer contract populates the live HUD exactly', 
       settings: service.getSettings(),
     });
     assert.equal(service.getStatus().diagnostics.code, 'waiting');
+    assert.equal(service.getStatus().scoreboardCoverage, 'unavailable');
 
     const unauthorized = observerFrame('invalid-unauthorized-key');
     const rejected = await send(service.gsiUrl, unauthorized);
@@ -89,6 +90,7 @@ test('independent CS2-shaped observer contract populates the live HUD exactly', 
     assert.equal(accepted.status, 202);
     const state = await publicState(service);
     assert.equal(state.status, 'live');
+    assert.equal(service.getStatus().scoreboardCoverage, 'scoreboard');
     assert.equal(state.map, 'de_ancient');
     assert.equal(state.mapPhase, 'live');
     assert.equal(state.round, 12);
@@ -120,6 +122,7 @@ test('independent CS2-shaped observer contract populates the live HUD exactly', 
     now += 5001;
     assert.equal((await publicState(service)).status, 'unavailable');
     assert.equal(service.getStatus().diagnostics.code, 'stale');
+    assert.equal(service.getStatus().scoreboardCoverage, 'unavailable');
 
     const fresh = observerFrame(token, {
       map: {
@@ -151,6 +154,7 @@ test('partial spectator GSI does not invent player, round or map information', a
     assert.equal(response.status, 202);
     const state = await publicState(service);
     assert.equal(state.status, 'live');
+    assert.equal(service.getStatus().scoreboardCoverage, 'partial');
     assert.equal(state.map, 'de_inferno');
     assert.equal(state.round, null);
     assert.equal(state.ctScore, null);

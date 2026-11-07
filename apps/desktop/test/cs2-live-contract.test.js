@@ -76,7 +76,6 @@ test('independent CS2-shaped observer contract populates the live HUD exactly', 
     assert.deepEqual(await publicState(service), {
       status: 'unavailable',
       settings: service.getSettings(),
-      players: [],
     });
     assert.equal(service.getStatus().diagnostics.code, 'waiting');
 

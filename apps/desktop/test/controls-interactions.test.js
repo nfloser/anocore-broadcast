@@ -20,6 +20,7 @@ function renderer() {
   };
   let mode = 'demo';
   let diagnosticCode = 'demo';
+  let scoreboardCoverage = 'unavailable';
   const api = {
     async getSettings() { calls.push('settings:get'); return { ...settings }; },
     async updateSettings(changes) {
@@ -33,6 +34,7 @@ function renderer() {
       return {
         mode,
         diagnostics: { code: diagnosticCode, ageSeconds: diagnosticCode === 'connected' ? 2 : null },
+        scoreboardCoverage,
       };
     },
     async switchMode(value) {
@@ -40,6 +42,7 @@ function renderer() {
       if (!['demo', 'live'].includes(value)) throw new Error('Invalid mode');
       mode = value;
       diagnosticCode = value === 'demo' ? 'demo' : 'waiting';
+      scoreboardCoverage = 'unavailable';
       return { ok: true, mode };
     },
     async exportGsi() { calls.push('export'); return { ok: true }; },
@@ -79,7 +82,7 @@ function renderer() {
   }
   return { elements, calls, api, intervals, flush, click, submit, setDiagnostic(code) {
     diagnosticCode = code;
-  } };
+  }, setCoverage(value) { scoreboardCoverage = value; } };
 }
 
 test('real operator renderer initializes correctly with sandboxed IPC facade', async () => {
@@ -176,4 +179,21 @@ test('safe diagnostics copy is disabled in Demo and enabled only in Live', async
   assert.match(ui.elements['setup-result'].textContent, /Could not complete/);
   await ui.click('setup-demo');
   assert.equal(ui.elements['setup-diagnostics'].disabled, true);
+});
+
+test('connected GSI warns about incomplete HUD without displaying private values', async () => {
+  const ui = renderer();
+  await ui.flush();
+  await ui.click('setup-live');
+  ui.setDiagnostic('connected');
+  ui.setCoverage('partial');
+  await ui.intervals[0].fn();
+  assert.match(ui.elements['session-status'].textContent, /RECEIVING GSI/);
+  assert.match(ui.elements['session-coverage'].textContent, /incomplete scoreboard/);
+  ui.setCoverage('scoreboard');
+  await ui.intervals[0].fn();
+  assert.match(ui.elements['session-coverage'].textContent, /both scores reported/);
+  ui.setDiagnostic('stale');
+  await ui.intervals[0].fn();
+  assert.match(ui.elements['session-coverage'].textContent, /unavailable/);
 });

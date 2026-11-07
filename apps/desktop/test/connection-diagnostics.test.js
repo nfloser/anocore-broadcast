@@ -67,6 +67,7 @@ test('public HUD coverage distinguishes missing core score fields without reveal
   assert.equal(summarizeScoreboardCoverage({ status: 'unavailable' }), 'unavailable');
   assert.equal(summarizeScoreboardCoverage({ status: 'ambiguous' }), 'unavailable');
   assert.equal(summarizeScoreboardCoverage({ status: 'live', map: 'de_ancient' }), 'partial');
+  assert.equal(summarizeScoreboardCoverage({ status: 'live', map: '', round: 1, ctScore: 1, tScore: 0 }), 'partial');
   assert.equal(summarizeScoreboardCoverage({
     status: 'live', map: 'de_ancient', round: 0, ctScore: 0, tScore: 0,
     players: [{ name: 'secret-name', steamid: '76561198000000000' }],

@@ -26,7 +26,8 @@ export function summarizeConnection({ mode, connection, ageMs } = {}) {
  */
 export function summarizeScoreboardCoverage(scoreboard) {
   if (scoreboard?.status !== 'live') return 'unavailable';
-  if (scoreboard.map != null && scoreboard.round != null &&
+  if (typeof scoreboard.map === 'string' && scoreboard.map.trim().length > 0 &&
+      scoreboard.round != null &&
       scoreboard.ctScore != null && scoreboard.tScore != null) return 'scoreboard';
   return 'partial';
 }

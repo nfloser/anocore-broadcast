@@ -8,6 +8,12 @@ Install dependencies with `npm install` (Node.js 22+ required *for development*)
 
 Ports 3008 and 3009 must be free. If a separate `npm run demo` session is still running, terminate it first. The desktop application does not terminate other programs or take over their ports.
 
+## Guided local setup in Operator Controls
+
+Open **Broadcast → Operator Controls** to use the three-step setup panel. Select Demo or Live without hunting for menu entries, explicitly export the observer CFG through the native file dialog (Live only), and copy the local OBS Browser Source URL. The panel includes the last authenticated GSI freshness state from the same trusted IPC as before. It never accesses the GSI key, writes the CFG silently, or changes the DatHost server. Native dialogs are still shown for exports and mode confirmation; a cancellation is not treated as a successful export.
+
+This is **not** a full Windows installation wizard: real CS2/GOTV and OBS acceptance still require an operator test.
+
 ## Built-in operator controls
 
 Open **Broadcast → Operator Controls** (or `Ctrl+,`) inside the desktop preview to edit CT/T team names, accent colors and roster visibility. Changes apply to the OBS preview without restarting the app and are stored as validated public-only settings at `<Electron userData>/operator-settings.json`. This file contains no credentials. The controls use restricted Electron IPC rather than a browser-accessible administrator port: no administrator token is exposed to the renderer, and there is no open port 3010 for the desktop version. No remote operation or team-side data access is provided.

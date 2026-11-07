@@ -6,4 +6,7 @@ contextBridge.exposeInMainWorld('broadcastControls', Object.freeze({
   getSettings: () => ipcRenderer.invoke('broadcast:settings:get'),
   updateSettings: changes => ipcRenderer.invoke('broadcast:settings:update', changes),
   getStatus: () => ipcRenderer.invoke('broadcast:session:status'),
+  switchMode: mode => ipcRenderer.invoke('broadcast:mode:switch', mode),
+  exportGsi: () => ipcRenderer.invoke('broadcast:gsi:export'),
+  copyObs: () => ipcRenderer.invoke('broadcast:obs:copy'),
 }));

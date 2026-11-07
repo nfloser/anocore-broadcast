@@ -330,3 +330,41 @@ test('real desktop services switch Demo -> Live -> Demo on the same ports', asyn
     await modes.close();
   }
 });
+
+test('guided setup IPC exposes only explicit safe actions to the trusted operator frame', () => {
+  const source = file => readFileSync(new URL('../src/' + file, import.meta.url), 'utf8');
+  const main = source('main.cjs');
+  const preload = source('controls-preload.cjs');
+  const html = source('controls.html');
+  const client = source('controls.js');
+  for (const action of ['mode:switch', 'gsi:export', 'obs:copy']) {
+    assert.ok(main.includes('broadcast:' + action));
+    assert.ok(preload.includes('broadcast:' + action));
+  }
+  assert.match(main, /requireControlsFrame\(event\)/);
+  assert.match(main, /return switchMode\(mode\)/);
+  assert.match(main, /return exportGsiConfig\(\)/);
+  assert.match(main, /return copyObsUrl\(\)/);
+  for (const id of ['setup-demo', 'setup-live', 'setup-export', 'setup-obs', 'setup-result']) {
+    assert.ok(html.includes('id="' + id + '"'));
+    assert.ok(client.includes("'" + id + "'"));
+  }
+  assert.match(html, /Content-Security-Policy/);
+  assert.doesNotMatch(client, /innerHTML|eval\(/);
+  assert.doesNotMatch(preload, /getGsiConfig|credentialStore|\btoken\b/);
+});
+
+test('operator controls map every DOM element they read and never remove controls on setup', () => {
+  const source = name => readFileSync(new URL('../src/' + name, import.meta.url), 'utf8');
+  const client = source('controls.js');
+  const page = source('controls.html');
+  const list = client.match(/const ids = \[([^\]]+)\];/);
+  assert.ok(list, 'Controls element mapping exists');
+  for (const id of list[1].matchAll(/'([^']+)'/g)) {
+    assert.ok(page.includes('id="' + id[1] + '"'), 'Missing control: ' + id[1]);
+  }
+  assert.ok(client.includes("elements['session-panel']"));
+  assert.ok(client.includes("elements['setup-export']"));
+  assert.ok(page.includes('id="controls"'));
+  assert.ok(page.includes('id="ctName"'));
+});

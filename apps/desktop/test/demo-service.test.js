@@ -330,3 +330,26 @@ test('real desktop services switch Demo -> Live -> Demo on the same ports', asyn
     await modes.close();
   }
 });
+
+test('guided setup IPC exposes only explicit safe actions to the trusted operator frame', () => {
+  const source = file => readFileSync(new URL('../src/' + file, import.meta.url), 'utf8');
+  const main = source('main.cjs');
+  const preload = source('controls-preload.cjs');
+  const html = source('controls.html');
+  const client = source('controls.js');
+  for (const action of ['mode:switch', 'gsi:export', 'obs:copy']) {
+    assert.ok(main.includes('broadcast:' + action));
+    assert.ok(preload.includes('broadcast:' + action));
+  }
+  assert.match(main, /requireControlsFrame\(event\)/);
+  assert.match(main, /return switchMode\(mode\)/);
+  assert.match(main, /return exportGsiConfig\(\)/);
+  assert.match(main, /return copyObsUrl\(\)/);
+  for (const id of ['setup-demo', 'setup-live', 'setup-export', 'setup-obs', 'setup-result']) {
+    assert.ok(html.includes('id="' + id + '"'));
+    assert.ok(client.includes("'" + id + "'"));
+  }
+  assert.match(html, /Content-Security-Policy/);
+  assert.doesNotMatch(client, /innerHTML|eval\(/);
+  assert.doesNotMatch(preload, /getGsiConfig|credentialStore|\btoken\b/);
+});

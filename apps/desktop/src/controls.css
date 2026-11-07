@@ -45,3 +45,9 @@ button.secondary { background: #26394b; color: #e9f4fc; border: 1px solid #4c667
 button.secondary:hover { background: #344d62; }
 #setup-result { margin-bottom: 0; min-height: 24px; color: #c5dae9; }
 @media(max-width:650px) { .setup-step { align-items: stretch; flex-direction: column; } }
+
+/* Fresh transport does not imply a complete, usable HUD. */
+.session-panel[data-connection="connected"][data-coverage="partial"],
+.session-panel[data-connection="connected"][data-coverage="unavailable"] { border-left-color: #edb96e; }
+.session-panel[data-connection="connected"][data-coverage="partial"] #session-coverage,
+.session-panel[data-connection="connected"][data-coverage="unavailable"] #session-coverage { color: #ffce83; font-weight: 700; }

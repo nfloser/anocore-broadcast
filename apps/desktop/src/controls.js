@@ -78,6 +78,7 @@ function displayConnection(state) {
     'HUD: incomplete scoreboard data despite receiving GSI updates' :
     'HUD: live scoreboard unavailable';
   elements['session-panel'].dataset.connection = code;
+  elements['session-panel'].dataset.coverage = code === 'connected' ? coverage : 'unavailable';
   if (!setupBusy) {
     elements['setup-export'].disabled = state?.mode !== 'live';
     elements['setup-demo'].disabled = state?.mode === 'demo';

@@ -17,9 +17,25 @@
     <p>Edit team identities, palette and roster visibility. Changes update the OBS preview immediately.</p>
     <section id="session-panel" class="panel session-panel" aria-label="Local observer connection status"><strong id="session-status">Checking connection…</strong><p id="session-help">The live observer requires an explicit CS2 configuration.</p><p id="session-age" class="session-age">No authenticated update timestamp available</p></section>
   </header>
+  <section class="panel setup-panel" aria-label="Guided CS2 and OBS setup">
+    <div class="panel-heading"><span>01</span><h2>Connect your broadcast</h2></div>
+    <div class="setup-step">
+      <div><strong>1. Choose your source</strong><p>Demo uses synthetic data. Live waits for your local CS2 spectator.</p></div>
+      <div class="setup-buttons"><button type="button" id="setup-demo" class="secondary">Demo mode</button><button type="button" id="setup-live">Start Live Observer</button></div>
+    </div>
+    <div class="setup-step">
+      <div><strong>2. Connect CS2</strong><p>In Live mode, export the authentication CFG to your CS2 game/csgo/cfg folder. Restart CS2, then spectate a match. Your saved key is reused after normal app restarts.</p></div>
+      <button type="button" id="setup-export" class="secondary" disabled>Export CS2 GSI CFG</button>
+    </div>
+    <div class="setup-step">
+      <div><strong>3. Connect OBS</strong><p>Paste the copied localhost URL into a 1920 × 1080 OBS Browser Source.</p></div>
+      <button type="button" id="setup-obs" class="secondary">Copy OBS URL</button>
+    </div>
+    <p id="setup-result" role="status" aria-live="polite">Choose a source to begin.</p>
+  </section>
   <form id="controls">
     <section class="panel">
-      <div class="panel-heading"><span>01</span><h2>Team identities</h2></div>
+      <div class="panel-heading"><span>02</span><h2>Team identities</h2></div>
       <div class="two-columns">
         <label>CT team name<input id="ctName" maxlength="28" required autocomplete="off"></label>
         <label>T team name<input id="tName" maxlength="28" required autocomplete="off"></label>
@@ -28,7 +44,7 @@
       </div>
     </section>
     <section class="panel">
-      <div class="panel-heading"><span>02</span><h2>Graphics visibility</h2></div>
+      <div class="panel-heading"><span>03</span><h2>Graphics visibility</h2></div>
       <label class="toggle"><input id="showRoster" type="checkbox">
         <span>Display ten-player roster panels</span>
       </label>

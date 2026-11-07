@@ -52,6 +52,19 @@ function registerControlsHandlers() {
     requireControlsFrame(event);
     return modeManager.current.getStatus();
   });
+  ipcMain.handle('broadcast:mode:switch', (event, mode) => {
+    requireControlsFrame(event);
+    if (!['demo', 'live'].includes(mode)) throw new Error('Invalid broadcast mode');
+    return switchMode(mode);
+  });
+  ipcMain.handle('broadcast:gsi:export', event => {
+    requireControlsFrame(event);
+    return exportGsiConfig();
+  });
+  ipcMain.handle('broadcast:obs:copy', event => {
+    requireControlsFrame(event);
+    return copyObsUrl();
+  });
 }
 
 async function openControls() {
@@ -91,9 +104,15 @@ async function openControls() {
   }
 }
 
+function copyObsUrl() {
+  if (switching || !modeManager?.current) return { ok: false, reason: 'busy' };
+  clipboard.writeText(modeManager.current.hudUrl);
+  return { ok: true };
+}
+
 async function exportGsiConfig() {
   const current = modeManager?.current;
-  if (current?.mode !== 'live' || switching) return;
+  if (current?.mode !== 'live' || switching) return { ok: false, reason: 'not-live' };
   const { discoverCs2ConfigDirectories } = await import(pathToFileURL(
     join(__dirname, 'steam-discovery.js')
   ).href);
@@ -111,7 +130,7 @@ async function exportGsiConfig() {
       buttons: ['Use detected CS2 folder', 'Choose manually', 'Cancel'],
       defaultId: 0, cancelId: 2, noLink: true,
     });
-    if (selected.response === 2) return;
+    if (selected.response === 2) return { ok: false, reason: 'cancelled' };
     if (selected.response === 0) targetDirectory = detected[0];
   } else if (detected.length > 1) {
     const candidates = detected.slice(0, 5);
@@ -123,7 +142,7 @@ async function exportGsiConfig() {
       buttons: [...candidates.map((_, i) => 'Library ' + (i + 1)), 'Choose manually', 'Cancel'],
       cancelId: candidates.length + 1, noLink: true,
     });
-    if (selected.response === candidates.length + 1) return;
+    if (selected.response === candidates.length + 1) return { ok: false, reason: 'cancelled' };
     if (selected.response < candidates.length) targetDirectory = candidates[selected.response];
   }
   const result = await dialog.showSaveDialog(window, {
@@ -132,9 +151,9 @@ async function exportGsiConfig() {
     buttonLabel: 'Save GSI configuration',
     filters: [{ name: 'CS2 GSI configuration', extensions: ['cfg'] }],
   });
-  if (result.canceled || !result.filePath) return;
+  if (result.canceled || !result.filePath) return { ok: false, reason: 'cancelled' };
   // A switch can occur while the native file picker is open.
-  if (current !== modeManager?.current || current.mode !== 'live') return;
+  if (current !== modeManager?.current || current.mode !== 'live') return { ok: false, reason: 'mode-changed' };
   try {
     // CS2 requires a plaintext token inside the user's explicitly exported
     // CFG. Never place it in HUD, frontend IPC, logs or persistent app settings.
@@ -144,9 +163,11 @@ async function exportGsiConfig() {
       message: 'CS2 observer configuration saved.',
       detail: "Place the CFG in Counter-Strike 2's game/csgo/cfg directory, then restart CS2. Keep it private. The same Windows user retains this key across normal restarts. Only an explicit reset requires a replacement CFG.",
     });
+    return { ok: true };
   } catch {
     dialog.showErrorBox('Unable to save GSI configuration',
       'The file already exists or cannot be written. Use a new filename or deliberately remove the old file before exporting again.');
+    return { ok: false, reason: 'write-failed' };
   }
 }
 
@@ -227,7 +248,7 @@ function updateMenu() {
 }
 
 async function switchMode(mode) {
-  if (switching || shutdownStarted || !modeManager) return;
+  if (switching || shutdownStarted || !modeManager) return { ok: false, reason: 'busy' };
   switching = true;
   updateMenu();
   try {
@@ -244,12 +265,14 @@ async function switchMode(mode) {
         detail: 'If this is the first Live session or the key was reset, use Broadcast → Export CS2 GSI Config and install the file under game/csgo/cfg, then restart CS2. Normal restarts reuse your encrypted Windows key. The HUD never fabricates match data.',
       });
     }
+    return { ok: true, mode: modeManager.current.mode };
   } catch {
     if (modeManager.current && window && !window.isDestroyed()) {
       await window.loadURL(modeManager.current.hudUrl).catch(() => {});
     }
     dialog.showErrorBox('Unable to switch broadcast mode',
       'The mode could not start. Check ports 3008 and 3009 and try again. The app attempts to restore Demo mode on failure.');
+    return { ok: false, reason: 'start-failed' };
   } finally {
     switching = false;
     updateMenu();

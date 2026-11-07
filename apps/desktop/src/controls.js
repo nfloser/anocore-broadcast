@@ -55,6 +55,7 @@ const help = Object.freeze({
     message: 'The operator connection state cannot be verified. Check that the desktop preview is still running.',
   },
 });
+let setupBusy = false;
 function displayConnection(state) {
   const diagnostic = state && typeof state.diagnostics === 'object' ?
     state.diagnostics : {};
@@ -71,6 +72,11 @@ function displayConnection(state) {
       'No authenticated update timestamp available' :
       'Last authenticated GSI update: ' + age + ' s ago';
   elements['session-panel'].dataset.connection = code;
+  if (!setupBusy) {
+    elements['setup-export'].disabled = state?.mode !== 'live';
+    elements['setup-demo'].disabled = state?.mode === 'demo';
+    elements['setup-live'].disabled = state?.mode === 'live';
+  }
 }
 async function refreshStatus() {
   try {
@@ -82,3 +88,43 @@ async function refreshStatus() {
 load();
 refreshStatus();
 setInterval(refreshStatus, 2000);
+
+function showSetupResult(value) {
+  elements['setup-result'].textContent = value;
+}
+async function setupAction(action, successMessage) {
+  if (setupBusy) return;
+  setupBusy = true;
+  for (const id of ['setup-demo', 'setup-live', 'setup-export', 'setup-obs']) {
+    elements[id].disabled = true;
+  }
+  showSetupResult('Working…');
+  try {
+    const result = await action();
+    if (result?.ok === true) {
+      showSetupResult(successMessage);
+    } else if (result?.reason === 'cancelled') {
+      showSetupResult('Cancelled. No changes were made.');
+    } else {
+      showSetupResult('Could not complete this step. Check the desktop dialog or connection.');
+    }
+  } catch {
+    showSetupResult('Could not complete this step. Check the desktop connection.');
+  } finally {
+    setupBusy = false;
+    await refreshStatus();
+    elements['setup-obs'].disabled = false;
+  }
+}
+elements['setup-demo'].addEventListener('click', () =>
+  setupAction(() => window.broadcastControls.switchMode('demo'),
+    'Demo mode enabled. Preview data is synthetic.'));
+elements['setup-live'].addEventListener('click', () =>
+  setupAction(() => window.broadcastControls.switchMode('live'),
+    'Live Observer started. Export the CS2 GSI CFG if this is your first setup.'));
+elements['setup-export'].addEventListener('click', () =>
+  setupAction(() => window.broadcastControls.exportGsi(),
+    'GSI CFG saved. Keep it private, restart CS2 and spectate a match.'));
+elements['setup-obs'].addEventListener('click', () =>
+  setupAction(() => window.broadcastControls.copyObs(),
+    'OBS Browser Source URL copied to clipboard.'));

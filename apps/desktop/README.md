@@ -36,6 +36,12 @@ The OBS Browser Source URL remains `http://127.0.0.1:3009/`, copied via the Broa
 
 The `Windows desktop preview` GitHub Actions workflow packages an unsigned x64 portable Electron executable and publishes its SHA-256 checksum as a workflow artifact. It is a test artifact, **not** a signed/released/production-ready installation. Preview artifacts must be independently tested on an actual clean Windows machine; security prompts may appear for unsigned binaries.
 
+## Independent GSI contract validation
+
+In addition to the synthetic animated demo and Windows packaged-runtime check, CI now submits a **separately authored CS2-shaped observer GSI sample** to the real authenticated desktop Live receiver. Assertions check provider compatibility, map/score/round projection, ten-player details, active weapons, utility, strict removal of Steam IDs/positions/tokens and synthetic radar, unauthorized rejection, recovery after stale data, and deliberately partial GSI fields without guessed values. This sample is **synthetic, not a capture from a real CS2 match**; CI proves the documented processing contract, not source compatibility or video-frame synchronization on a particular observer build.
+
+For real-world acceptance, keep the desktop in Live mode with the saved CFG installed and monitor the **Receiving GSI** status while spectating. Compare map, score, round, health, equipment, player identities and phase timers directly against the observed CS2 spectator view and the OBS browser source. Document any inconsistencies with exact CS2 version, mode, observed field/phase and result, but **never attach the GSI CFG or any file containing the authentication key**. A real CS2 + OBS end-to-end acceptance remains a release blocker.
+
 ## Windows packaged runtime smoke test
 
 The Windows CI workflow now launches the **packaged unpacked Electron executable** from `dist/win-unpacked` (the same packaged application image used for the portable EXE), waits for the loopback OBS HTML and sanitized synthetic 5v5 JSON to become available, requests normal main-window shutdown, verifies that both local ports are released, and repeats startup/shutdown to catch restart regressions. The smoke-test executable includes its own Electron runtime; it does not rely on a system Node installation at runtime. On failure, the CI job fails before publishing a preview artifact.

@@ -162,3 +162,59 @@ test('partial spectator GSI does not invent player, round or map information', a
     await service.close();
   }
 });
+
+test('sequential synthetic partial and empty GSI updates remain explicit and recover cleanly', async () => {
+  const token = 'cs2-sequences-local-secret-1234567890';
+  let now = 20_000;
+  const service = await startDesktopLive({
+    receiverPort: 0, overlayPort: 0, token, clock: () => now, staleAfterMs: 5000,
+  });
+  try {
+    assert.equal((await send(service.gsiUrl, observerFrame(token))).status, 202);
+    const complete = await publicState(service);
+    assert.equal(complete.players.length, 10);
+    assert.equal(complete.ctScore, 7);
+    assert.equal(complete.tScore, 5);
+
+    // This describes current snapshot-replacement behavior, not a promise
+    // about whether real Valve GSI omissions mean unchanged or absent.
+    now += 1000;
+    assert.equal((await send(service.gsiUrl, {
+      auth: { token }, provider: { name: 'Counter-Strike 2' },
+    })).status, 202);
+    const partial = await publicState(service);
+    assert.equal(partial.status, 'live');
+    assert.equal(partial.map, null);
+    assert.equal(partial.round, null);
+    assert.equal(partial.ctScore, null);
+    assert.equal(partial.tScore, null);
+    assert.deepEqual(partial.players, []);
+    assert.equal(service.getStatus().diagnostics.code, 'connected');
+
+    now += 1000;
+    assert.equal((await send(service.gsiUrl, {
+      auth: { token }, provider: { name: 'Counter-Strike 2' },
+      map: { name: 'de_ancient', round: 13, team_ct: { score: 8 }, team_t: { score: 5 } },
+      allplayers: {},
+    })).status, 202);
+    const empty = await publicState(service);
+    assert.equal(empty.round, 13);
+    assert.equal(empty.ctScore, 8);
+    assert.deepEqual(empty.players, [], 'Explicitly empty roster must not resurrect earlier players');
+
+    now += 1000;
+    assert.equal((await send(service.gsiUrl, observerFrame(token, {
+      map: { name: 'de_ancient', round: 14, team_ct: { score: 9 }, team_t: { score: 5 } },
+    }))).status, 202);
+    const recovered = await publicState(service);
+    assert.equal(recovered.round, 14);
+    assert.equal(recovered.ctScore, 9);
+    assert.equal(recovered.players.length, 10);
+
+    now += 5001;
+    assert.equal(service.getStatus().diagnostics.code, 'stale');
+    assert.equal((await publicState(service)).status, 'unavailable');
+  } finally {
+    await service.close();
+  }
+});

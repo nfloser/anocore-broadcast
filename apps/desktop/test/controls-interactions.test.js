@@ -190,12 +190,16 @@ test('connected GSI warns about incomplete HUD without displaying private values
   await ui.intervals[0].fn();
   assert.match(ui.elements['session-status'].textContent, /RECEIVING GSI/);
   assert.match(ui.elements['session-coverage'].textContent, /incomplete scoreboard/);
+  assert.equal(ui.elements['session-panel'].dataset.connection, 'connected');
+  assert.equal(ui.elements['session-panel'].dataset.coverage, 'partial');
   ui.setCoverage('scoreboard');
   await ui.intervals[0].fn();
   assert.match(ui.elements['session-coverage'].textContent, /both scores reported/);
+  assert.equal(ui.elements['session-panel'].dataset.coverage, 'scoreboard');
   ui.setDiagnostic('stale');
   await ui.intervals[0].fn();
   assert.match(ui.elements['session-coverage'].textContent, /unavailable/);
+  assert.equal(ui.elements['session-panel'].dataset.coverage, 'unavailable');
 });
 
 test('later status poll wins when an earlier successful response arrives last', async () => {
@@ -233,4 +237,11 @@ test('old status failure cannot replace a newer success or a completed mode swit
   await oldPoll;
   assert.match(ui.elements['session-status'].textContent, /WAITING FOR CS2/);
   assert.equal(ui.elements['setup-export'].disabled, false);
+});
+
+test('operator stylesheet has degraded styling for connected incomplete scoreboard', () => {
+  const css = readFileSync(new URL('../src/controls.css', import.meta.url), 'utf8');
+  assert.match(css, /data-connection="connected"\]\[data-coverage="partial"/);
+  assert.match(css, /data-connection="connected"\]\[data-coverage="unavailable"/);
+  assert.match(css, /#session-coverage/);
 });

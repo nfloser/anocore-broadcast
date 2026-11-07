@@ -5,6 +5,7 @@ import { createOverlayServer } from '../../overlay/src/server.js';
 import { createBroadcastSettings } from '../../manager/src/settings.js';
 import { createObserverConfig } from './gsi-config.js';
 import { summarizeConnection } from './connection-diagnostics.js';
+import { createSafeObserverReport } from './safe-observer-report.js';
 
 /**
  * Desktop main-process-only observer service. The live mode does not simulate
@@ -50,6 +51,13 @@ export async function startDesktopLive({
       hudUrl: 'http://127.0.0.1:' + hud.port + '/',
       gsiUrl: 'http://127.0.0.1:' + receiver.port + '/gsi',
       getGsiConfig: () => gsiConfig,
+      getDiagnosticReport: () => {
+        const { status, ageMs } = runtime.freshness();
+        return createSafeObserverReport({
+          status: { mode: 'live', diagnostics: summarizeConnection({ mode: 'live', connection: status, ageMs }) },
+          scoreboard: createPublicScoreboard(runtime.view()),
+        });
+      },
       getSettings: () => settings.get(),
       updateSettings: changes => settings.update(changes),
       getStatus: () => {

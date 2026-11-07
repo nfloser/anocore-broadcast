@@ -1,4 +1,4 @@
-const ids = ['controls', 'ctName', 'tName', 'ctColor', 'tColor', 'showRoster', 'apply', 'message', 'session-status', 'session-help', 'session-panel', 'session-age', 'setup-demo', 'setup-live', 'setup-export', 'setup-obs', 'setup-result'];
+const ids = ['controls', 'ctName', 'tName', 'ctColor', 'tColor', 'showRoster', 'apply', 'message', 'session-status', 'session-help', 'session-panel', 'session-age', 'setup-demo', 'setup-live', 'setup-export', 'setup-obs', 'setup-result', 'setup-diagnostics'];
 const elements = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 const fields = ['ctName', 'tName', 'ctColor', 'tColor', 'showRoster'];
 function showStatus(message) { elements.message.textContent = message; }
@@ -76,6 +76,7 @@ function displayConnection(state) {
     elements['setup-export'].disabled = state?.mode !== 'live';
     elements['setup-demo'].disabled = state?.mode === 'demo';
     elements['setup-live'].disabled = state?.mode === 'live';
+    elements['setup-diagnostics'].disabled = state?.mode !== 'live';
   }
 }
 async function refreshStatus() {
@@ -95,7 +96,7 @@ function showSetupResult(value) {
 async function setupAction(action, successMessage) {
   if (setupBusy) return;
   setupBusy = true;
-  for (const id of ['setup-demo', 'setup-live', 'setup-export', 'setup-obs']) {
+  for (const id of ['setup-demo', 'setup-live', 'setup-export', 'setup-obs', 'setup-diagnostics']) {
     elements[id].disabled = true;
   }
   showSetupResult('Working…');
@@ -128,3 +129,7 @@ elements['setup-export'].addEventListener('click', () =>
 elements['setup-obs'].addEventListener('click', () =>
   setupAction(() => window.broadcastControls.copyObs(),
     'OBS Browser Source URL copied to clipboard.'));
+
+elements['setup-diagnostics'].addEventListener('click', () =>
+  setupAction(() => window.broadcastControls.copySafeDiagnostics(),
+    'Privacy-safe diagnostic summary copied. It contains no names, positions or credentials.'));

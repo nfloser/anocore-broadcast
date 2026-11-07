@@ -36,6 +36,12 @@ The OBS Browser Source URL remains `http://127.0.0.1:3009/`, copied via the Broa
 
 The `Windows desktop preview` GitHub Actions workflow packages an unsigned x64 portable Electron executable and publishes its SHA-256 checksum as a workflow artifact. It is a test artifact, **not** a signed/released/production-ready installation. Preview artifacts must be independently tested on an actual clean Windows machine; security prompts may appear for unsigned binaries.
 
+## Privacy-safe live diagnostic sharing
+
+When reproducing an issue with a real CS2 spectator, open **Broadcast → Operator Controls** in **Live** mode and choose **Copy safe diagnostics**. The application creates a small, allowlisted JSON report of observer freshness, HUD field availability and player count directly in the main process, then copies it to the clipboard on request. The controls renderer gets only a success/failure response. This report intentionally omits player/team names, map names, Steam IDs, positions, weapons, raw event details and GSI authentication keys. It is useful for spotting missing categories of data, not for diagnosing exact Valve GSI field semantics or video-frame synchronization.
+
+The copy action is available only in Live mode. Never share the exported `gamestate_integration_anocore.cfg`, a raw GSI packet, the encrypted observer key file or screenshots containing private details. Safe reports do not replace authorized real-world observer acceptance.
+
 ## Independent GSI contract validation
 
 In addition to the synthetic animated demo and Windows packaged-runtime check, CI now submits a **separately authored CS2-shaped observer GSI sample** to the real authenticated desktop Live receiver. Assertions check provider compatibility, map/score/round projection, ten-player details, active weapons, utility, strict removal of Steam IDs/positions/tokens and synthetic radar, unauthorized rejection, recovery after stale data, and deliberately partial GSI fields without guessed values. This sample is **synthetic, not a capture from a real CS2 match**; CI proves the documented processing contract, not source compatibility or video-frame synchronization on a particular observer build.

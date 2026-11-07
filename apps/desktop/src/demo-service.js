@@ -5,6 +5,7 @@ import { createOverlayServer } from '../../overlay/src/server.js';
 import { createDemoFrame } from '../../overlay/src/demo-fixture.js';
 import { createDemoRadar } from '../../overlay/src/demo-radar.js';
 import { createBroadcastSettings } from '../../manager/src/settings.js';
+import { summarizeConnection } from './connection-diagnostics.js';
 
 /**
  * Electron owns these listeners. No reusable key is stored or transferred to
@@ -86,7 +87,10 @@ export async function startDesktopDemo({
     return {
       mode: 'demo',
       hudUrl: 'http://127.0.0.1:' + hud.port + '/',
-      getStatus: () => ({ mode: 'demo', connection: 'synthetic', ageMs: null }),
+      getStatus: () => ({
+        mode: 'demo', connection: 'synthetic', ageMs: null,
+        diagnostics: summarizeConnection({ mode: 'demo', connection: 'synthetic', ageMs: null }),
+      }),
       getSettings: () => settings.get(),
       updateSettings: changes => settings.update(changes),
       async close() {

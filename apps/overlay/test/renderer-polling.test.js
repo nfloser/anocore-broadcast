@@ -7,7 +7,7 @@ const html = readFileSync(new URL('../static/index.html', import.meta.url), 'utf
 const source = readFileSync(new URL('../static/overlay.js', import.meta.url), 'utf8');
 
 function createHud() {
-  const ids = [...html.matchAll(/\\bid="([^"]+)"/g)].map(match => match[1]);
+  const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
   function element() {
     return {
       textContent: '', hidden: false, dataset: {}, style: { setProperty() {} },

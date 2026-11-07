@@ -6,6 +6,7 @@ import { createBroadcastSettings } from '../../manager/src/settings.js';
 import { createObserverConfig } from './gsi-config.js';
 import { summarizeConnection, summarizeScoreboardCoverage } from './connection-diagnostics.js';
 import { createSafeObserverReport } from './safe-observer-report.js';
+import { createSafeGsiShapeTracker } from './gsi-shape-tracker.js';
 
 /**
  * Desktop main-process-only observer service. The live mode does not simulate
@@ -25,8 +26,10 @@ export async function startDesktopLive({
   // The auth key remains in this main-process service; the GSI config is
   // available only through its privileged, explicit export command.
   createObserverConfig({ token, port: receiverPort === 0 ? 3008 : receiverPort });
+  const shapeTracker = createSafeGsiShapeTracker();
   const runtime = createBroadcastRuntime({
     matchId, token, port: receiverPort, clock, staleAfterMs,
+    onAcceptedShape: shape => shapeTracker.accept(shape),
   });
   let overlay = null;
   let closed = false;
@@ -53,10 +56,13 @@ export async function startDesktopLive({
       getGsiConfig: () => gsiConfig,
       getDiagnosticReport: () => {
         const { status, ageMs } = runtime.freshness();
-        return createSafeObserverReport({
-          status: { mode: 'live', diagnostics: summarizeConnection({ mode: 'live', connection: status, ageMs }) },
-          scoreboard: createPublicScoreboard(runtime.view()),
-        });
+        return {
+          ...createSafeObserverReport({
+            status: { mode: 'live', diagnostics: summarizeConnection({ mode: 'live', connection: status, ageMs }) },
+            scoreboard: createPublicScoreboard(runtime.view()),
+          }),
+          gsiFieldShapes: shapeTracker.summary(),
+        };
       },
       getSettings: () => settings.get(),
       updateSettings: changes => settings.update(changes),

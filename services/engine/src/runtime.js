@@ -21,6 +21,7 @@ export function createBroadcastRuntime({
   port = 3008,
   journalPath,
   maxJournalBytes = 32 * 1024 * 1024,
+  onAcceptedShape,
 } = {}) {
   // No file is created unless persistence is explicitly configured.
   const journal = journalPath === undefined ? null :
@@ -46,6 +47,7 @@ export function createBroadcastRuntime({
   const ingest = createGsiIngest({
     matchId, sourceId, token, staleAfterMs, clock,
     initialSequence: timeline.lastSequence(sourceId),
+    onAcceptedShape,
     onEvent(event) {
       const result = timeline.ingest(event);
       // The receiver only acknowledges an event if the engine committed it.

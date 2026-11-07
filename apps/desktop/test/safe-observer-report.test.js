@@ -107,3 +107,41 @@ test('localhost live service yields safe diagnostics without authenticating a se
     await service.close();
   }
 });
+
+test('diagnostic shape counts only accepted authenticated frames and never copies source fields', async () => {
+  const token = 'shape-test-secret-0123456789abcdef';
+  const service = await startDesktopLive({ receiverPort: 0, overlayPort: 0, token });
+  const post = async raw => (await fetch(service.gsiUrl, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(raw),
+  })).status;
+  try {
+    let shape = service.getDiagnosticReport().gsiFieldShapes;
+    assert.equal(shape.samples, 0);
+    assert.equal(shape.totalAccepted, 0);
+
+    assert.equal(await post({ auth: { token: 'wrong-secret' }, provider: { name: 'Counter-Strike 2' },
+      previously: { secret: 'NOT FOR REPORT' } }), 401);
+    assert.equal(service.getDiagnosticReport().gsiFieldShapes.totalAccepted, 0);
+
+    assert.equal(await post({ auth: { token }, provider: { name: 'Counter-Strike 2' },
+      map: { name: 'PRIVATE_MAP_NAME', round: 3, team_ct: { score: 2 }, team_t: { score: 1 } },
+      allplayers: {}, previously: { allplayers: { secret: 'PRIVATE' } } }), 202);
+    assert.equal(await post({ auth: { token }, provider: { name: 'Counter-Strike 2' },
+      round: { phase: 'live' }, added: { map: { name: 'PRIVATE_ADDED_MAP' } } }), 202);
+    const report = service.getDiagnosticReport();
+    shape = report.gsiFieldShapes;
+    assert.equal(shape.totalAccepted, 2);
+    assert.equal(shape.samples, 2);
+    assert.deepEqual(shape.fields, {
+      map: 1, round: 1, allplayers: 1, emptyAllplayers: 1,
+      phaseCountdowns: 0, previously: 1, added: 1,
+    });
+    const json = JSON.stringify(report);
+    for (const secret of [token, 'PRIVATE', 'NOT FOR REPORT', 'allplayers: { secret']) {
+      assert.equal(json.includes(secret), false);
+    }
+  } finally {
+    await service.close();
+  }
+});

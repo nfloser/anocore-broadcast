@@ -176,7 +176,8 @@ export function normalizeGsiSnapshot(input) {
 
 /** Reduces GSI notifications to one explicitly session-scoped snapshot envelope. */
 export function createGsiIngest({ matchId, sourceId = 'observer-1', token, onEvent = () => {},
-  staleAfterMs = DEFAULT_STALE_AFTER_MS, clock = () => Date.now(), initialSequence = 0 }) {
+  staleAfterMs = DEFAULT_STALE_AFTER_MS, clock = () => Date.now(), initialSequence = 0,
+  onAcceptedShape = () => {} }) {
   if (!MATCH_ID_PATTERN.test(matchId ?? '') || !MATCH_ID_PATTERN.test(sourceId) || sourceId.length > 105) {
     throw new TypeError('matchId and sourceId must be valid IDs');
   }
@@ -184,6 +185,7 @@ export function createGsiIngest({ matchId, sourceId = 'observer-1', token, onEve
     throw new TypeError('A random authentication token (at least 16 bytes) is required');
   }
   if (typeof onEvent !== 'function' || typeof clock !== 'function' ||
+      typeof onAcceptedShape !== 'function' ||
       !Number.isSafeInteger(staleAfterMs) || staleAfterMs <= 0) {
     throw new TypeError('Invalid ingest options');
   }
@@ -231,6 +233,15 @@ export function createGsiIngest({ matchId, sourceId = 'observer-1', token, onEve
     }
     sequence = next;
     lastReceivedAt = now;
+    // Diagnostic observation runs only after authentication and commit.
+    // It cannot invalidate an already committed snapshot or change the HTTP response.
+    try { onAcceptedShape({
+      map: isRecord(raw.map), round: isRecord(raw.round),
+      allplayers: isRecord(raw.allplayers),
+      emptyAllplayers: isRecord(raw.allplayers) && Object.keys(raw.allplayers).length === 0,
+      phaseCountdowns: isRecord(raw.phase_countdowns),
+      previously: isRecord(raw.previously), added: isRecord(raw.added),
+    }); } catch { /* Statistics are best-effort and never affect ingestion. */ }
     return { ok: true, status: 202, envelope };
   }
   return { accept, freshness };

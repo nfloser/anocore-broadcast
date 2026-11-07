@@ -1,4 +1,4 @@
-const ids = ['controls', 'ctName', 'tName', 'ctColor', 'tColor', 'showRoster', 'apply', 'message', 'session-status', 'session-help'];
+const ids = ['controls', 'ctName', 'tName', 'ctColor', 'tColor', 'showRoster', 'apply', 'message', 'session-status', 'session-help', 'session-panel', 'session-age', 'setup-demo', 'setup-live', 'setup-export', 'setup-obs', 'setup-result'];
 const elements = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
 const fields = ['ctName', 'tName', 'ctColor', 'tColor', 'showRoster'];
 function showStatus(message) { elements.message.textContent = message; }

@@ -353,3 +353,18 @@ test('guided setup IPC exposes only explicit safe actions to the trusted operato
   assert.doesNotMatch(client, /innerHTML|eval\(/);
   assert.doesNotMatch(preload, /getGsiConfig|credentialStore|\btoken\b/);
 });
+
+test('operator controls map every DOM element they read and never remove controls on setup', () => {
+  const source = name => readFileSync(new URL('../src/' + name, import.meta.url), 'utf8');
+  const client = source('controls.js');
+  const page = source('controls.html');
+  const list = client.match(/const ids = \[([^\]]+)\];/);
+  assert.ok(list, 'Controls element mapping exists');
+  for (const id of list[1].matchAll(/'([^']+)'/g)) {
+    assert.ok(page.includes('id="' + id[1] + '"'), 'Missing control: ' + id[1]);
+  }
+  assert.ok(client.includes("elements['session-panel']"));
+  assert.ok(client.includes("elements['setup-export']"));
+  assert.ok(page.includes('id="controls"'));
+  assert.ok(page.includes('id="ctName"'));
+});

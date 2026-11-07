@@ -54,3 +54,7 @@ The CS2 observer configuration subscribes to `phase_countdowns`. Where present, 
 The scoreboard, team rosters and synthetic demo radar share a unified broadcast stage. The 1920×1080 OBS source uses a transparent background, grouped data hierarchy, prominent side scores, readable equipment and HP bars, an integrated radar preview, fallbacks for missing observer data, and reduced-motion support. The radar remains an **abstract synthetic demo grid** and does not automatically become a live-world-position renderer. Use a local browser to check legibility at the actual OBS output size and verify appearance before use on stream.
 
 Tracking query parameters such as `?utm_source=chatgpt.com` are safely ignored for known static HUD routes; unknown paths continue returning 404.
+
+## Overlapping OBS polling responses
+
+The browser-source HUD refreshes its read-only local state every 500 ms. Requests can overlap during a busy system or mode change. Only the most recently **requested** response is allowed to update graphics: late older successes or failures are discarded rather than rolling the scoreboard backward or blanking newer data. A failure of the newest request still hides unavailable live data. This client-side safeguard does not establish correct GOTV timing, real CS2 payload semantics or a guaranteed frame-accurate clock. See Issue #62 for real observer acceptance.

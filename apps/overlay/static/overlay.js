@@ -116,13 +116,17 @@ function render(state) {
   }
 }
 
+// Polls may overlap: only the latest requested state is authoritative.
+let latestRefresh = 0;
 async function refresh() {
+  const request = ++latestRefresh;
   try {
     const response = await fetch('/api/state', { cache: 'no-store' });
     if (!response.ok) throw new Error('Data unavailable');
-    render(await response.json());
+    const state = await response.json();
+    if (request === latestRefresh) render(state);
   } catch {
-    render({ status: 'unavailable' });
+    if (request === latestRefresh) render({ status: 'unavailable' });
   }
 }
 refresh();

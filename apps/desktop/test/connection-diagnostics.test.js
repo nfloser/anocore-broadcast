@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { summarizeConnection } from '../src/connection-diagnostics.js';
+import { summarizeConnection, summarizeScoreboardCoverage } from '../src/connection-diagnostics.js';
 import { startDesktopLive } from '../src/live-service.js';
 import { createDemoFrame } from '../../overlay/src/demo-fixture.js';
 
@@ -61,4 +61,17 @@ test('live service diagnostics transition waiting -> connected -> stale without 
   } finally {
     await service.close();
   }
+});
+
+test('public HUD coverage distinguishes missing core score fields without revealing values', () => {
+  assert.equal(summarizeScoreboardCoverage({ status: 'unavailable' }), 'unavailable');
+  assert.equal(summarizeScoreboardCoverage({ status: 'ambiguous' }), 'unavailable');
+  assert.equal(summarizeScoreboardCoverage({ status: 'live', map: 'de_ancient' }), 'partial');
+  assert.equal(summarizeScoreboardCoverage({
+    status: 'live', map: 'de_ancient', round: 0, ctScore: 0, tScore: 0,
+    players: [{ name: 'secret-name', steamid: '76561198000000000' }],
+  }), 'scoreboard');
+  assert.equal(summarizeScoreboardCoverage({
+    status: 'live', map: 'de_ancient', round: 5, ctScore: 3, tScore: null,
+  }), 'partial');
 });

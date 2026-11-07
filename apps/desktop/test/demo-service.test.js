@@ -124,6 +124,9 @@ test('desktop IPC uses isolated controls renderer and never embeds reusable toke
   assert.match(preload, /contextBridge\.exposeInMainWorld/);
   assert.match(preload, /ipcRenderer\.invoke/);
   assert.match(preload, /broadcast:session:status/);
+  assert.match(preload, /broadcast:diagnostics:copy/);
+  assert.match(main, /requireControlsFrame\(event\);\s*return copySafeDiagnostics\(\)/);
+  assert.match(main, /getDiagnosticReport\(\)/);
   assert.match(main, /Export CS2 GSI Config/);
   assert.match(main, /Start Live Observer/);
   assert.match(main, /safeStorage/);

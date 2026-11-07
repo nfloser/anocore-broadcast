@@ -12,6 +12,8 @@ Ports 3008 and 3009 must be free. If a separate `npm run demo` session is still 
 
 Open **Broadcast → Operator Controls** to use the three-step setup panel. Select Demo or Live without hunting for menu entries, explicitly export the observer CFG through the native file dialog (Live only), and copy the local OBS Browser Source URL. The panel includes the last authenticated GSI freshness state from the same trusted IPC as before. It never accesses the GSI key, writes the CFG silently, or changes the DatHost server. Native dialogs are still shown for exports and mode confirmation; a cancellation is not treated as a successful export.
 
+The guided control script now also has deterministic interaction tests running its actual event handlers against a simulated DOM and IPC boundary. They exercise mode switching, export/copy, cancellation/error feedback, disabled states and team settings. These tests do not click native Windows dialogs or validate a real CS2/GOTV feed.
+
 This is **not** a full Windows installation wizard: real CS2/GOTV and OBS acceptance still require an operator test.
 
 ## Built-in operator controls

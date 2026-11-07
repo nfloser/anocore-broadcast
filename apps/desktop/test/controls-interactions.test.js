@@ -67,7 +67,6 @@ function renderer() {
     await flush();
   }
   async function submit(changes) {
-    Object.assign(elements, {});
     for (const [key, value] of Object.entries(changes)) {
       if (key === 'showRoster') elements[key].checked = value;
       else elements[key].value = value;

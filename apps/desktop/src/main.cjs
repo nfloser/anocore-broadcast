@@ -65,6 +65,10 @@ function registerControlsHandlers() {
     requireControlsFrame(event);
     return copyObsUrl();
   });
+  ipcMain.handle('broadcast:diagnostics:copy', event => {
+    requireControlsFrame(event);
+    return copySafeDiagnostics();
+  });
 }
 
 async function openControls() {
@@ -101,6 +105,20 @@ async function openControls() {
   } catch {
     if (!target.isDestroyed()) target.destroy();
     throw new Error('Unable to load operator interface');
+  }
+}
+
+function copySafeDiagnostics() {
+  if (switching || modeManager?.current?.mode !== 'live') {
+    return { ok: false, reason: 'not-live' };
+  }
+  try {
+    // Only the explicit allowlisted report reaches the clipboard.
+    // Never copy raw GSI payloads, session credentials or player names.
+    clipboard.writeText(JSON.stringify(modeManager.current.getDiagnosticReport(), null, 2));
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: 'unavailable' };
   }
 }
 

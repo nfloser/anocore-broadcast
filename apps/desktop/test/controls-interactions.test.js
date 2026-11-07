@@ -44,6 +44,7 @@ function renderer() {
     },
     async exportGsi() { calls.push('export'); return { ok: true }; },
     async copyObs() { calls.push('copy'); return { ok: true }; },
+    async copySafeDiagnostics() { calls.push('copy-safe-report'); return { ok: true }; },
   };
   const intervals = [];
   runInNewContext(controlsSource, {
@@ -159,4 +160,20 @@ test('busy setup actions cannot launch concurrent mode switches', async () => {
   release();
   await first;
   await ui.flush();
+});
+
+test('safe diagnostics copy is disabled in Demo and enabled only in Live', async () => {
+  const ui = renderer();
+  await ui.flush();
+  assert.equal(ui.elements['setup-diagnostics'].disabled, true);
+  await ui.click('setup-live');
+  assert.equal(ui.elements['setup-diagnostics'].disabled, false);
+  await ui.click('setup-diagnostics');
+  assert.ok(ui.calls.includes('copy-safe-report'));
+  assert.match(ui.elements['setup-result'].textContent, /Privacy-safe/);
+  ui.api.copySafeDiagnostics = async () => ({ ok: false, reason: 'unavailable' });
+  await ui.click('setup-diagnostics');
+  assert.match(ui.elements['setup-result'].textContent, /Could not complete/);
+  await ui.click('setup-demo');
+  assert.equal(ui.elements['setup-diagnostics'].disabled, true);
 });

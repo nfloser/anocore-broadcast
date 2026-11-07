@@ -58,3 +58,7 @@ Tracking query parameters such as `?utm_source=chatgpt.com` are safely ignored f
 ## Overlapping OBS polling responses
 
 The browser-source HUD refreshes its read-only local state every 500 ms. Requests can overlap during a busy system or mode change. Only the most recently **requested** response is allowed to update graphics: late older successes or failures are discarded rather than rolling the scoreboard backward or blanking newer data. A failure of the newest request still hides unavailable live data. This client-side safeguard does not establish correct GOTV timing, real CS2 payload semantics or a guaranteed frame-accurate clock. See Issue #62 for real observer acceptance.
+
+## Demo watermark when switching sources
+
+The OBS renderer marks synthetic fixtures **DEMO · SYNTHETIC DATA**. A confirmed non-demo live scoreboard clears this watermark, even when the browser source remains open across a mode switch; returning to synthetic Demo restores it. Temporary unavailable/error polling after known demo content keeps the warning while hiding unavailable scores. This does not verify the identity, accuracy, or video timing of a real observer feed.

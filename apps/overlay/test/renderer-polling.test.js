@@ -87,3 +87,36 @@ test('latest OBS request failure still blanks live graphics', async () => {
   assert.equal(hud.elements['ct-score'].textContent, '—');
   assert.equal(hud.elements.notice.hidden, false);
 });
+
+test('synthetic watermark clears on real Live and returns on Demo without reload', async () => {
+  const hud = createHud();
+  hud.complete(0, { ...hud.frame(), demo: true, radar: { kind: 'synthetic', markers: [] } });
+  await hud.settle();
+  assert.equal(hud.elements['demo-mark'].hidden, false);
+  assert.equal(hud.elements['radar-preview'].hidden, false);
+
+  hud.intervals[0].handler();
+  hud.complete(1, hud.frame({ round: 15, ctScore: 9, tScore: 6 }));
+  await hud.settle();
+  assert.equal(hud.elements['demo-mark'].hidden, true);
+  assert.equal(hud.elements['radar-preview'].hidden, true);
+
+  hud.intervals[0].handler();
+  hud.complete(2, { ...hud.frame({ round: 2 }), demo: true,
+    radar: { kind: 'synthetic', markers: [] } });
+  await hud.settle();
+  assert.equal(hud.elements['demo-mark'].hidden, false);
+  assert.equal(hud.elements['radar-preview'].hidden, false);
+});
+
+test('temporary unavailable response retains known synthetic warning without fake scores', async () => {
+  const hud = createHud();
+  hud.complete(0, { ...hud.frame(), demo: true });
+  await hud.settle();
+  hud.intervals[0].handler();
+  hud.requests[1].reject(new Error('failed demo poll'));
+  await hud.settle();
+  assert.equal(hud.elements['demo-mark'].hidden, false);
+  assert.equal(hud.elements['ct-score'].textContent, '—');
+  assert.equal(hud.elements.notice.hidden, false);
+});

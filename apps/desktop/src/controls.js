@@ -11,7 +11,7 @@ function fill(settings) {
 async function load() {
   try {
     fill(await window.broadcastControls.getSettings());
-    showStatus('Connected to local demo');
+    showStatus('Operator controls ready');
   } catch {
     showStatus('Cannot load operator settings');
     elements.apply.disabled = true;
@@ -33,20 +33,50 @@ elements.controls.addEventListener('submit', async event => {
     elements.apply.disabled = false;
   }
 });
+const help = Object.freeze({
+  demo: {
+    heading: 'DEMO · SYNTHETIC DATA',
+    message: 'The preview uses generated 5v5 data. Choose Broadcast → Start Live Observer to connect CS2.',
+  },
+  waiting: {
+    heading: 'LIVE · WAITING FOR CS2',
+    message: 'No authenticated GSI update has arrived yet. Verify that Live Observer is running, export the local CS2 GSI CFG into game/csgo/cfg, restart CS2 and join an observer/spectator session. This does not identify a specific connection failure.',
+  },
+  connected: {
+    heading: 'LIVE · RECEIVING GSI',
+    message: 'Authenticated GSI updates are arriving. This does not yet verify GOTV synchronization or broadcast accuracy.',
+  },
+  stale: {
+    heading: 'LIVE · GSI INTERRUPTED',
+    message: 'No recent authenticated update. Check whether CS2 is still running as observer, whether the match or connection changed, and whether the local GSI CFG still uses the saved key.',
+  },
+  unavailable: {
+    heading: 'CONNECTION STATUS UNAVAILABLE',
+    message: 'The operator connection state cannot be verified. Check that the desktop preview is still running.',
+  },
+});
+function displayConnection(state) {
+  const diagnostic = state && typeof state.diagnostics === 'object' ?
+    state.diagnostics : {};
+  const code = Object.hasOwn(help, diagnostic.code) ?
+    diagnostic.code : 'unavailable';
+  const display = help[code];
+  const age = Number.isSafeInteger(diagnostic.ageSeconds) &&
+    diagnostic.ageSeconds >= 0 && diagnostic.ageSeconds <= 86400 ?
+      diagnostic.ageSeconds : null;
+  elements['session-status'].textContent = display.heading;
+  elements['session-help'].textContent = display.message;
+  elements['session-age'].textContent =
+    age === null || code === 'waiting' || code === 'demo' ?
+      'No authenticated update timestamp available' :
+      'Last authenticated GSI update: ' + age + ' s ago';
+  elements['session-panel'].dataset.connection = code;
+}
 async function refreshStatus() {
   try {
-    const state = await window.broadcastControls.getStatus();
-    const connection = state.connection === 'synthetic' ? 'Synthetic demo' :
-      state.connection === 'waiting' ? 'Waiting for CS2 observer' :
-      state.connection === 'live' ? 'Receiving observer data' :
-      state.connection === 'stale' ? 'Observer data stale' : 'Unavailable';
-    elements['session-status'].textContent =
-      (state.mode === 'live' ? 'LIVE OBSERVER' : 'DEMO') + ' · ' + connection;
-    elements['session-help'].textContent = state.mode === 'live' ?
-      'Use Broadcast → Export CS2 GSI Config to connect a local CS2 spectator.' :
-      'Synthetic fixture data. Use Broadcast → Start Live Observer for real GSI.';
+    displayConnection(await window.broadcastControls.getStatus());
   } catch {
-    elements['session-status'].textContent = 'Connection status unavailable';
+    displayConnection({ diagnostics: { code: 'unavailable' } });
   }
 }
 load();

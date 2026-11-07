@@ -4,6 +4,7 @@ import { createPublicScoreboard } from '../../overlay/src/public-state.js';
 import { createOverlayServer } from '../../overlay/src/server.js';
 import { createBroadcastSettings } from '../../manager/src/settings.js';
 import { createObserverConfig } from './gsi-config.js';
+import { summarizeConnection } from './connection-diagnostics.js';
 
 /**
  * Desktop main-process-only observer service. The live mode does not simulate
@@ -53,7 +54,10 @@ export async function startDesktopLive({
       updateSettings: changes => settings.update(changes),
       getStatus: () => {
         const { status, ageMs } = runtime.freshness();
-        return { mode: 'live', connection: status, ageMs };
+        return {
+          mode: 'live', connection: status, ageMs,
+          diagnostics: summarizeConnection({ mode: 'live', connection: status, ageMs }),
+        };
       },
       async close() {
         if (closed) return;

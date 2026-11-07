@@ -29,3 +29,8 @@ footer { margin-top: 24px; color: #788da5; font-size: 10px; letter-spacing: .13e
 .session-panel { padding: 13px 17px; border-left: 4px solid #7db7de; }
 .session-panel strong { font-size: 12px; font-weight: 900; letter-spacing: .12em; }
 .session-panel p { margin: 6px 0 0; }
+
+.session-panel[data-connection="connected"] { border-left-color: #78c6a8; }
+.session-panel[data-connection="stale"], .session-panel[data-connection="waiting"] { border-left-color: #edb96e; }
+.session-panel[data-connection="unavailable"] { border-left-color: #e18c91; }
+.session-age { font-size: 11px; color: #b4c7d9; font-variant-numeric: tabular-nums; }

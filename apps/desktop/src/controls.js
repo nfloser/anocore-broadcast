@@ -85,11 +85,16 @@ function displayConnection(state) {
     elements['setup-diagnostics'].disabled = state?.mode !== 'live';
   }
 }
+let latestStatusRequest = 0;
 async function refreshStatus() {
+  const request = ++latestStatusRequest;
   try {
-    displayConnection(await window.broadcastControls.getStatus());
+    const state = await window.broadcastControls.getStatus();
+    if (request === latestStatusRequest) displayConnection(state);
   } catch {
-    displayConnection({ diagnostics: { code: 'unavailable' } });
+    if (request === latestStatusRequest) {
+      displayConnection({ diagnostics: { code: 'unavailable' } });
+    }
   }
 }
 load();

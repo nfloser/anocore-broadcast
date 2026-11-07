@@ -197,3 +197,40 @@ test('connected GSI warns about incomplete HUD without displaying private values
   await ui.intervals[0].fn();
   assert.match(ui.elements['session-coverage'].textContent, /unavailable/);
 });
+
+test('later status poll wins when an earlier successful response arrives last', async () => {
+  const ui = renderer();
+  await ui.flush();
+  const pending = [];
+  ui.api.getStatus = () => new Promise(resolve => pending.push(resolve));
+  const earlier = ui.intervals[0].fn();
+  const later = ui.intervals[0].fn();
+  assert.equal(pending.length, 2);
+  pending[1]({ mode: 'live', diagnostics: { code: 'connected', ageSeconds: 1 },
+    scoreboardCoverage: 'scoreboard' });
+  await later;
+  assert.match(ui.elements['session-status'].textContent, /RECEIVING GSI/);
+  pending[0]({ mode: 'demo', diagnostics: { code: 'demo' },
+    scoreboardCoverage: 'unavailable' });
+  await earlier;
+  assert.match(ui.elements['session-status'].textContent, /RECEIVING GSI/);
+  assert.equal(ui.elements['setup-export'].disabled, false);
+});
+
+test('old status failure cannot replace a newer success or a completed mode switch', async () => {
+  const ui = renderer();
+  await ui.flush();
+  let rejectOld;
+  ui.api.getStatus = () => new Promise((_resolve, reject) => { rejectOld = reject; });
+  const oldPoll = ui.intervals[0].fn();
+  ui.api.getStatus = async () => ({
+    mode: 'live', diagnostics: { code: 'waiting', ageSeconds: null },
+    scoreboardCoverage: 'unavailable',
+  });
+  await ui.click('setup-live');
+  assert.match(ui.elements['session-status'].textContent, /WAITING FOR CS2/);
+  rejectOld(new Error('interrupted old request'));
+  await oldPoll;
+  assert.match(ui.elements['session-status'].textContent, /WAITING FOR CS2/);
+  assert.equal(ui.elements['setup-export'].disabled, false);
+});

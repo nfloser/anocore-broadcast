@@ -48,6 +48,11 @@ In addition to the synthetic animated demo and Windows packaged-runtime check, C
 
 For real-world acceptance, keep the desktop in Live mode with the saved CFG installed and monitor the **Receiving GSI** status while spectating. Compare map, score, round, health, equipment, player identities and phase timers directly against the observed CS2 spectator view and the OBS browser source. Document any inconsistencies with exact CS2 version, mode, observed field/phase and result, but **never attach the GSI CFG or any file containing the authentication key**. A real CS2 + OBS end-to-end acceptance remains a release blocker.
 
+
+### Sequential partial-frame regression contract
+
+The synthetic HTTP integration tests also send **successive** observer messages (complete 5v5 state, provider-only partial state, explicitly empty `allplayers`, then another complete state). In the current implementation each accepted message is a standalone snapshot: omitted scores and players do **not** carry forward, an empty roster stays empty, and a subsequent complete message restores available values. A fresh GSI connection can therefore coexist with an incomplete HUD. This is intentionally characterized by tests, **not** proof that real CS2 spectator GSI omissions mean removed rather than unchanged. Do not add speculative merge behavior or assume production readiness until the permissioned real-observer verification in Issue #62 resolves actual payload semantics. Stale expiry continues to hide the whole public snapshot.
+
 ## Windows packaged runtime smoke test
 
 The Windows CI workflow now launches the **packaged unpacked Electron executable** from `dist/win-unpacked` (the same packaged application image used for the portable EXE), waits for the loopback OBS HTML and sanitized synthetic 5v5 JSON to become available, requests normal main-window shutdown, verifies that both local ports are released, and repeats startup/shutdown to catch restart regressions. The smoke-test executable includes its own Electron runtime; it does not rely on a system Node installation at runtime. On failure, the CI job fails before publishing a preview artifact.

@@ -43,6 +43,9 @@ export async function startDesktopLive({
         const config = settings.get();
         return {
           ...state,
+          // Explicit source mode even while waiting for the first real GSI
+          // packet; the OBS renderer must never retain a Demo watermark here.
+          demo: false,
           settings: config,
           players: config.showRoster ? state.players : [],
         };

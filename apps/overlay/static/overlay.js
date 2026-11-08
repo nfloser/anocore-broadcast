@@ -75,9 +75,12 @@ function drawRadar(radar, allowed) {
 
 function render(state) {
   // Keep the explicit synthetic warning through transient unavailable polls,
-  // but remove it as soon as a non-demo live observer frame is confirmed.
+  // but remove it as soon as the source explicitly reports non-demo mode,
+  // including Live waiting/stale frames before authenticated GSI arrives.
   if (state?.demo === true) elements['demo-mark'].dataset.demo = 'true';
-  else if (state?.status === 'live') elements['demo-mark'].dataset.demo = 'false';
+  else if (state?.demo === false || state?.status === 'live') {
+    elements['demo-mark'].dataset.demo = 'false';
+  }
   elements['demo-mark'].hidden = elements['demo-mark'].dataset.demo !== 'true';
   const settings = state?.settings;
   if (settings) {

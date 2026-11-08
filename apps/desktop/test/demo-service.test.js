@@ -168,7 +168,7 @@ test('live observer is unavailable until authenticated GSI arrives and hides dem
     const endpoint = live.hudUrl + 'api/state';
     const waiting = await (await fetch(endpoint)).json();
     assert.equal(waiting.status, 'unavailable');
-    assert.equal(waiting.demo, undefined);
+    assert.equal(waiting.demo, false);
     assert.equal(waiting.radar, undefined);
 
     const config = live.getGsiConfig();
@@ -184,7 +184,7 @@ test('live observer is unavailable until authenticated GSI arrives and hides dem
     assert.equal(state.status, 'live');
     assert.equal(state.map, 'de_nuke');
     assert.equal(state.players.length, 10);
-    assert.equal(state.demo, undefined);
+    assert.equal(state.demo, false);
     assert.equal(state.radar, undefined);
     assert.ok(!JSON.stringify(state).includes('position'));
     assert.ok(!JSON.stringify(state).includes(key));
@@ -328,7 +328,7 @@ test('real desktop services switch Demo -> Live -> Demo on the same ports', asyn
     assert.equal(live.mode, 'live');
     const waiting = await (await fetch(endpoint)).json();
     assert.equal(waiting.status, 'unavailable');
-    assert.equal(waiting.demo, undefined);
+    assert.equal(waiting.demo, false);
     assert.equal(waiting.radar, undefined);
     assert.equal((await fetch(live.gsiUrl, {
       method: 'POST', headers: { 'content-type': 'application/json' },
@@ -336,7 +336,7 @@ test('real desktop services switch Demo -> Live -> Demo on the same ports', asyn
     })).status, 202);
     const observed = await (await fetch(endpoint)).json();
     assert.equal(observed.status, 'live');
-    assert.equal(observed.demo, undefined);
+    assert.equal(observed.demo, false);
 
     const restored = await modes.switchTo('demo');
     assert.equal(restored.mode, 'demo');

@@ -129,10 +129,15 @@ export function createMatchTimeline({
     for (const event of history) {
       if (event.occurredAt > cutoff) continue;
       const last = visible.get(event.sourceId);
-      if (!last || event.occurredAt > last.occurredAt ||
-          (event.occurredAt === last.occurredAt && event.sequence > last.sequence)) {
-        visible.set(event.sourceId, event);
-      }
+      // Volatile zero-delay Live follows the latest committed source sequence.
+      // Windows wall-clock corrections can make a newer acknowledged GSI
+      // frame's occurredAt earlier than its predecessor. Strict history and
+      // delayed replay retain their existing chronological timestamp order.
+      const newer = retention === 'rolling' ?
+        event.sequence > (last?.sequence ?? 0) :
+        !last || event.occurredAt > last.occurredAt ||
+          (event.occurredAt === last.occurredAt && event.sequence > last.sequence);
+      if (newer) visible.set(event.sourceId, event);
     }
     const snapshots = {};
     const freshness = {};

@@ -224,3 +224,24 @@ test('GSI body timeout is validated before binding a socket', () => {
     }), /GSI body timeout/i);
   }
 });
+
+test('authenticated rolling GSI keeps the newest accepted score across a system clock backstep', async t => {
+  let now = 20_000;
+  const { runtime, url } = await serve({
+    retention: 'rolling', capacity: 2, clock: () => now, staleAfterMs: 1000,
+  }, t);
+  const send = async round => fetch(url, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(snapshot(round)),
+  });
+  assert.equal((await send(12)).status, 202);
+  now = 19_900;
+  assert.equal((await send(13)).status, 202);
+  now = 20_001;
+  assert.equal(runtime.view().snapshots['observer-1'].map.round, 13);
+  assert.equal(runtime.view().freshness['observer-1'].lastSequence, 2);
+  assert.equal((await send(14)).status, 202);
+  assert.equal(runtime.stats().eventCount, 2);
+  assert.equal(runtime.view().snapshots['observer-1'].map.round, 14);
+  assert.equal(runtime.freshness().status, 'live');
+});

@@ -149,11 +149,11 @@ function openIncompleteGsiRequest(port) {
     socket.once('error', reject);
     socket.once('connect', () => {
       // The declared body never completes, so ingest.accept() must not run.
-      socket.write('POST /gsi HTTP/1.1\\r\\n' +
-        'Host: 127.0.0.1\\r\\n' +
-        'Content-Type: application/json\\r\\n' +
-        'Content-Length: 100\\r\\n' +
-        'Connection: keep-alive\\r\\n\\r\\n' +
+      socket.write('POST /gsi HTTP/1.1\r\n' +
+        'Host: 127.0.0.1\r\n' +
+        'Content-Type: application/json\r\n' +
+        'Content-Length: 100\r\n' +
+        'Connection: keep-alive\r\n\r\n' +
         '{');
       resolve(socket);
     });

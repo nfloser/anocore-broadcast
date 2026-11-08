@@ -131,7 +131,7 @@ test('volatile retention preserves per-source sequence gaps and freshness', () =
     clock: () => 5000, staleAfterMs: 10000,
   });
   assert.equal(engine.ingest(packet(1, 1000)).status, 'accepted');
-  assert.equal(engine.ingest(packet(2, 1001, 'observer-2')).status, 'buffered');
+  assert.equal(engine.ingest(packet(2, 1003, 'observer-2')).status, 'buffered');
   assert.equal(engine.view().freshness['observer-2'].status, 'waiting');
   assert.deepEqual(engine.ingest(packet(1, 1002, 'observer-2')), {
     status: 'accepted', count: 2,

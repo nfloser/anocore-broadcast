@@ -75,6 +75,7 @@ test('independent CS2-shaped observer contract populates the live HUD exactly', 
   try {
     assert.deepEqual(await publicState(service), {
       status: 'unavailable',
+      demo: false,
       settings: service.getSettings(),
     });
     assert.equal(service.getStatus().diagnostics.code, 'waiting');
@@ -90,6 +91,7 @@ test('independent CS2-shaped observer contract populates the live HUD exactly', 
     assert.equal(accepted.status, 202);
     const state = await publicState(service);
     assert.equal(state.status, 'live');
+    assert.equal(state.demo, false);
     assert.equal(service.getStatus().scoreboardCoverage, 'scoreboard');
     assert.equal(state.map, 'de_ancient');
     assert.equal(state.mapPhase, 'live');
@@ -116,7 +118,7 @@ test('independent CS2-shaped observer contract populates the live HUD exactly', 
     for (const forbidden of [
       token, '76561199000000001', '76561199999999999',
       '"auth"', '"position"', '"forward"', '"steamid"',
-      '"provider"', '"raw"', '"radar"', '"demo"',
+      '"provider"', '"raw"', '"radar"',
     ]) assert.equal(serialized.includes(forbidden), false, 'Unexpected public field: ' + forbidden);
 
     now += 5001;

@@ -17,7 +17,7 @@
 ### Known limits
 In-memory only. Does not persist source sessions across restart. No gap recovery/snapshot rewind protocol, event-type payload schema, clock offset estimation, stable score reducer, global cross-source ordering, authentication or live adapter-to-engine wiring. An untrusted producer must pass through the authenticated GSI adapter first. These are required before production use.
 
-## Optional durable journal (experimental)
+## Local GSI receiver transport boundaries\n\nThe loopback-only authenticated HTTP receiver caps JSON request bodies at 256 KiB and now has a configurable `bodyTimeoutMs` with a default absolute 5-second deadline (50–60,000 ms allowed). An incomplete or slow body is disconnected without receiving an accepted event; it cannot refresh the live score. `runtime.close()` destroys only sockets owned by that receiver before waiting for HTTP shutdown, allowing Live→Demo switching despite pending partial POSTs. This timeout limits request handling, not CS2/GOTV broadcast latency or the staleness cutoff.\n\n## Optional durable journal (experimental)
 
 Set `ANOCORE_JOURNAL_PATH` to a local file in a writable private directory. Each acknowledged event is synchronously appended to a JSON-lines journal before updating in-memory state. On restart the engine validates and replays the complete journal and resumes the local GSI event sequence. A recovered snapshot is withheld as stale until new data arrives; the receiver reports `waiting` after restart.
 

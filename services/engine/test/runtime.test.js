@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createBroadcastRuntime } from '../src/runtime.js';
+import { createConnection } from 'node:net';
 
 const token = 'test-secret-0123456789';
 function snapshot(round = 1) {
@@ -140,4 +141,86 @@ test('persistent journals cannot use rolling timeline retention', () => {
   assert.throws(() => createBroadcastRuntime({
     matchId: 'match-1', token, delayMs: 1000, retention: 'rolling',
   }), /rolling.*delay/i);
+});
+
+function openIncompleteGsiRequest(port) {
+  return new Promise((resolve, reject) => {
+    const socket = createConnection({ host: '127.0.0.1', port });
+    socket.once('error', reject);
+    socket.once('connect', () => {
+      // The declared body never completes, so ingest.accept() must not run.
+      socket.write('POST /gsi HTTP/1.1\r\n' +
+        'Host: 127.0.0.1\r\n' +
+        'Content-Type: application/json\r\n' +
+        'Content-Length: 100\r\n' +
+        'Connection: keep-alive\r\n\r\n' +
+        '{');
+      resolve(socket);
+    });
+  });
+}
+
+function waitForSocketClose(socket, timeoutMs = 1500) {
+  if (socket.destroyed) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const deadline = setTimeout(() => reject(new Error('Incomplete GSI connection stayed open')), timeoutMs);
+    socket.once('close', () => { clearTimeout(deadline); resolve(); });
+  });
+}
+
+test('incomplete GSI body is terminated by deadline without committing a match snapshot', async t => {
+  const runtime = createBroadcastRuntime({
+    matchId: 'match-1', token, port: 0, bodyTimeoutMs: 120,
+  });
+  const address = await runtime.listen();
+  t.after(() => runtime.close());
+  const socket = await openIncompleteGsiRequest(address.port);
+  t.after(() => socket.destroy());
+  await waitForSocketClose(socket);
+  assert.equal(runtime.stats().eventCount, 0);
+  assert.equal(runtime.freshness().status, 'waiting');
+  assert.equal((await fetch('http://127.0.0.1:' + address.port + '/health')).status, 200);
+  const healthy = await fetch('http://127.0.0.1:' + address.port + '/gsi', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(snapshot()),
+  });
+  assert.equal(healthy.status, 202);
+  assert.equal(runtime.stats().eventCount, 1);
+});
+
+test('closing Live GSI receiver kills unfinished local connections and allows port reuse', async t => {
+  const runtime = createBroadcastRuntime({
+    matchId: 'match-1', token, port: 0, bodyTimeoutMs: 10000,
+  });
+  const address = await runtime.listen();
+  const socket = await openIncompleteGsiRequest(address.port);
+  t.after(() => socket.destroy());
+  const closed = waitForSocketClose(socket);
+  await Promise.race([
+    runtime.close(),
+    new Promise((_resolve, reject) => setTimeout(() => reject(new Error('GSI receiver shutdown hung')), 1000)),
+  ]);
+  await closed;
+  assert.equal(runtime.stats().eventCount, 0);
+  const again = createBroadcastRuntime({
+    matchId: 'match-1', token, port: address.port,
+  });
+  await again.listen();
+  try {
+    const accepted = await fetch('http://127.0.0.1:' + address.port + '/gsi', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(snapshot()),
+    });
+    assert.equal(accepted.status, 202);
+  } finally {
+    await again.close();
+  }
+});
+
+test('GSI body timeout is validated before binding a socket', () => {
+  for (const bodyTimeoutMs of [0, -1, 49, 60001, 1.5, NaN, Infinity]) {
+    assert.throws(() => createBroadcastRuntime({
+      matchId: 'match-1', token, bodyTimeoutMs,
+    }), /GSI body timeout/i);
+  }
 });

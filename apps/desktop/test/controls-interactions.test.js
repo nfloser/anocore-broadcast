@@ -245,3 +245,20 @@ test('operator stylesheet has degraded styling for connected incomplete scoreboa
   assert.match(css, /data-connection="connected"\]\[data-coverage="unavailable"/);
   assert.match(css, /#session-coverage/);
 });
+
+test('real observer acceptance protocol matches actual controls and stays explicitly unverified', () => {
+  const guide = readFileSync(new URL('../REAL-OBSERVER-ACCEPTANCE.md', import.meta.url), 'utf8');
+  const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  for (const label of ['Start Live Observer', 'Export CS2 GSI CFG', 'Copy safe diagnostics']) {
+    assert.ok(controlsPage.includes(label), 'missing real control: ' + label);
+    assert.ok(guide.includes(label), 'missing operator procedure: ' + label);
+  }
+  for (const scenario of ['Halftime', 'Overtime', 'reconnect', 'Map change', 'OBS', 'NOT RUN']) {
+    assert.match(guide.toLowerCase(), new RegExp(scenario.toLowerCase()));
+  }
+  assert.match(guide, /http:\/\/127\.0\.0\.1:3009\//);
+  assert.match(readme, /REAL-OBSERVER-ACCEPTANCE\.md/);
+  assert.match(guide, /NOT YET EXECUTED/);
+  assert.match(guide, /never auto-mark accepted/);
+  assert.doesNotMatch(guide, /password\s*[:=]\s*\S{8}/i);
+});

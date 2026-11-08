@@ -48,6 +48,8 @@ The copy action is available only in Live mode. Never share the exported `gamest
 
 In addition to the synthetic animated demo and Windows packaged-runtime check, CI now submits a **separately authored CS2-shaped observer GSI sample** to the real authenticated desktop Live receiver. Assertions check provider compatibility, map/score/round projection, ten-player details, active weapons, utility, strict removal of Steam IDs/positions/tokens and synthetic radar, unauthorized rejection, recovery after stale data, and deliberately partial GSI fields without guessed values. This sample is **synthetic, not a capture from a real CS2 match**; CI proves the documented processing contract, not source compatibility or video-frame synchronization on a particular observer build.
 
+For a repeatable, privacy-safe operator procedure with A01–A13 acceptance cases, D0–D4 diagnostic checkpoints, evidence templates, and explicit release gates, use [Real CS2/GOTV + OBS acceptance protocol](./REAL-OBSERVER-ACCEPTANCE.md). This document is a **plan**, not a claim that acceptance was performed.
+
 For real-world acceptance, keep the desktop in Live mode with the saved CFG installed and monitor the **Receiving GSI** status while spectating. Compare map, score, round, health, equipment, player identities and phase timers directly against the observed CS2 spectator view and the OBS browser source. Document any inconsistencies with exact CS2 version, mode, observed field/phase and result, but **never attach the GSI CFG or any file containing the authentication key**. A real CS2 + OBS end-to-end acceptance remains a release blocker.
 
 

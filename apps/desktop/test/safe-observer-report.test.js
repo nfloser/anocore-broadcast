@@ -133,6 +133,13 @@ test('diagnostic shape counts only accepted authenticated frames and never copie
     shape = report.gsiFieldShapes;
     assert.equal(shape.totalAccepted, 2);
     assert.equal(shape.samples, 2);
+    assert.deepEqual(shape.transitions, {
+      scoreboardBecameIncomplete: 1,
+      scoreboardBecameComplete: 0,
+      rosterBecameMissing: 0,
+      rosterBecameNonempty: 0,
+      longestIncompleteScoreboardStreak: 1,
+    });
     assert.deepEqual(shape.fields, {
       map: 1, round: 1, completeScoreboard: 1,
       allplayers: 1, emptyAllplayers: 1, nonemptyAllplayers: 0,

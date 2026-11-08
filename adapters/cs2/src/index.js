@@ -4,6 +4,7 @@ import { validateEnvelope, PROTOCOL_VERSION } from '../../../packages/protocol/s
 
 const MAX_BODY_BYTES = 256 * 1024;
 const DEFAULT_STALE_AFTER_MS = 5_000;
+const DEFAULT_GSI_BODY_TIMEOUT_MS = 5_000;
 const MATCH_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$/;
 
 function isRecord(value) {
@@ -265,13 +266,20 @@ function matchesToken(provided, expected) {
  * Local-only HTTP receiver. Never bind directly to a public interface:
  * GSI auth tokens are shared secrets transmitted without TLS by CS2.
  */
-export function createGsiServer(ingest, { host = '127.0.0.1', port = 3008 } = {}) {
+export function createGsiServer(ingest, {
+  host = '127.0.0.1', port = 3008, bodyTimeoutMs = DEFAULT_GSI_BODY_TIMEOUT_MS,
+} = {}) {
   if (host !== '127.0.0.1' && host !== '::1') {
     throw new TypeError('Only loopback interfaces are supported');
   }
   if (!Number.isInteger(port) || port < 0 || port > 65535) {
     throw new TypeError('Invalid port');
   }
+  if (!Number.isSafeInteger(bodyTimeoutMs) ||
+      bodyTimeoutMs < 50 || bodyTimeoutMs > 60_000) {
+    throw new TypeError('Invalid GSI body timeout');
+  }
+  const sockets = new Set();
   const server = createServer(async (req, res) => {
     function reply(status, body) {
       res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
@@ -296,6 +304,11 @@ export function createGsiServer(ingest, { host = '127.0.0.1', port = 3008 } = {}
     }
     let size = 0;
     const chunks = [];
+    // A sender can leave a Content-Length body unfinished indefinitely.
+    // The deadline is absolute, rather than reset by a trickle of bytes.
+    // Destroying the request socket never acknowledges a partial GSI update.
+    const deadline = setTimeout(() => req.destroy(), bodyTimeoutMs);
+    deadline.unref();
     try {
       for await (const chunk of req) {
         size += chunk.length;
@@ -309,11 +322,35 @@ export function createGsiServer(ingest, { host = '127.0.0.1', port = 3008 } = {}
       const result = ingest.accept(input);
       reply(result.status, result.ok ? { accepted: true } : { error: result.error });
     } catch {
-      if (!res.writableEnded) reply(400, { error: 'Malformed JSON or request' });
+      if (!res.destroyed && !res.writableEnded) {
+        reply(400, { error: 'Malformed JSON or request' });
+      }
+    } finally {
+      clearTimeout(deadline);
     }
   });
-  return { server, listen: () => new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(port, host, () => { server.removeListener('error', reject); resolve(server.address()); });
-  }) };
+  server.on('connection', socket => {
+    sockets.add(socket);
+    socket.on('close', () => sockets.delete(socket));
+  });
+  return {
+    server,
+    listen: () => new Promise((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(port, host, () => {
+        server.removeListener('error', reject);
+        resolve(server.address());
+      });
+    }),
+    close: () => {
+      if (!server.listening) return Promise.resolve();
+      // server.close() can otherwise wait on a half-sent POST or an idle
+      // keep-alive connection. Only sockets owned by this loopback listener
+      // are terminated, so mode switches and Windows shutdown stay bounded.
+      for (const socket of sockets) socket.destroy();
+      return new Promise((resolve, reject) => {
+        server.close(error => error ? reject(error) : resolve());
+      });
+    },
+  };
 }

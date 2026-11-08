@@ -134,13 +134,42 @@ test('diagnostic shape counts only accepted authenticated frames and never copie
     assert.equal(shape.totalAccepted, 2);
     assert.equal(shape.samples, 2);
     assert.deepEqual(shape.fields, {
-      map: 1, round: 1, allplayers: 1, emptyAllplayers: 1,
+      map: 1, round: 1, completeScoreboard: 1,
+      allplayers: 1, emptyAllplayers: 1, nonemptyAllplayers: 0,
       phaseCountdowns: 0, previously: 1, added: 1,
     });
     const json = JSON.stringify(report);
     for (const secret of [token, 'PRIVATE', 'NOT FOR REPORT', 'allplayers: { secret']) {
       assert.equal(json.includes(secret), false);
     }
+  } finally {
+    await service.close();
+  }
+});
+
+test('GSI core shape counters distinguish zero scores, partial map, and nonempty roster', async () => {
+  const token = 'shape-core-secret-0123456789abcdef';
+  const service = await startDesktopLive({ receiverPort: 0, overlayPort: 0, token });
+  const post = async body => (await fetch(service.gsiUrl, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ auth: { token }, provider: { name: 'Counter-Strike 2' }, ...body }),
+  })).status;
+  try {
+    assert.equal(await post({ map: { name: 'de_nuke', round: 0,
+      team_ct: { score: 0 }, team_t: { score: 0 } },
+    allplayers: { private_id: { name: 'SENSITIVE', team: 'CT' } } }), 202);
+    assert.equal(await post({ map: { name: 'de_nuke', round: 1,
+      team_ct: { score: 1 } }, allplayers: {} }), 202);
+    assert.equal(await post({ map: { name: '  ', round: 2,
+      team_ct: { score: 1 }, team_t: { score: 1 } } }), 202);
+    const summary = service.getDiagnosticReport().gsiFieldShapes;
+    assert.equal(summary.totalAccepted, 3);
+    assert.equal(summary.fields.map, 3);
+    assert.equal(summary.fields.completeScoreboard, 1);
+    assert.equal(summary.fields.allplayers, 2);
+    assert.equal(summary.fields.nonemptyAllplayers, 1);
+    assert.equal(summary.fields.emptyAllplayers, 1);
+    assert.doesNotMatch(JSON.stringify(summary), /SENSITIVE|de_nuke|private_id|shape-core-secret/);
   } finally {
     await service.close();
   }

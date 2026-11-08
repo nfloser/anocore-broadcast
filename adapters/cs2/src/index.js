@@ -237,8 +237,15 @@ export function createGsiIngest({ matchId, sourceId = 'observer-1', token, onEve
     // It cannot invalidate an already committed snapshot or change the HTTP response.
     try { onAcceptedShape({
       map: isRecord(raw.map), round: isRecord(raw.round),
+      completeScoreboard: isRecord(raw.map) &&
+        typeof raw.map.name === 'string' && raw.map.name.trim().length > 0 &&
+        Number.isSafeInteger(raw.map.round) && raw.map.round >= 0 &&
+        isRecord(raw.map.team_ct) && isRecord(raw.map.team_t) &&
+        Number.isSafeInteger(raw.map.team_ct.score) && raw.map.team_ct.score >= 0 &&
+        Number.isSafeInteger(raw.map.team_t.score) && raw.map.team_t.score >= 0,
       allplayers: isRecord(raw.allplayers),
       emptyAllplayers: isRecord(raw.allplayers) && Object.keys(raw.allplayers).length === 0,
+      nonemptyAllplayers: isRecord(raw.allplayers) && Object.keys(raw.allplayers).length > 0,
       phaseCountdowns: isRecord(raw.phase_countdowns),
       previously: isRecord(raw.previously), added: isRecord(raw.added),
     }); } catch { /* Statistics are best-effort and never affect ingestion. */ }

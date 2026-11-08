@@ -4,7 +4,8 @@
  * The bounded window is for operator diagnostics, not state reconciliation.
  */
 const FIELD_KEYS = Object.freeze([
-  'map', 'round', 'allplayers', 'emptyAllplayers',
+  'map', 'round', 'completeScoreboard',
+  'allplayers', 'emptyAllplayers', 'nonemptyAllplayers',
   'phaseCountdowns', 'previously', 'added',
 ]);
 const WINDOW = 64;

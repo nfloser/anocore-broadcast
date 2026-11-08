@@ -12,6 +12,8 @@ test('64-entry GSI field-shape window expires oldest samples without retaining r
   assert.equal(initial.totalAccepted, 1);
   assert.equal(initial.fields.map, 1);
   assert.equal(initial.fields.emptyAllplayers, 1);
+  assert.equal(initial.fields.completeScoreboard, 0);
+  assert.equal(initial.fields.nonemptyAllplayers, 0);
   for (let i = 0; i < 64; i++) {
     tracker.accept({ round: true, added: true, allplayers: false });
   }
@@ -20,6 +22,8 @@ test('64-entry GSI field-shape window expires oldest samples without retaining r
   assert.equal(result.samples, 64);
   assert.equal(result.totalAccepted, 65);
   assert.equal(result.fields.map, 0);
+  assert.equal(result.fields.completeScoreboard, 0);
+  assert.equal(result.fields.nonemptyAllplayers, 0);
   assert.equal(result.fields.emptyAllplayers, 0);
   assert.equal(result.fields.previously, 0);
   assert.equal(result.fields.round, 64);
@@ -32,11 +36,14 @@ test('64-entry GSI field-shape window expires oldest samples without retaining r
 
 test('shape summary allows only true booleans and cannot be mutated by caller', () => {
   const tracker = createSafeGsiShapeTracker();
-  tracker.accept({ map: 'de_secret', round: 1, allplayers: true, added: true });
+  tracker.accept({ map: 'de_secret', round: 1, allplayers: true, added: true,
+    completeScoreboard: 'yes', nonemptyAllplayers: 1 });
   const result = tracker.summary();
   assert.equal(result.fields.map, 0);
   assert.equal(result.fields.round, 0);
   assert.equal(result.fields.allplayers, 1);
+  assert.equal(result.fields.completeScoreboard, 0);
+  assert.equal(result.fields.nonemptyAllplayers, 0);
   result.fields.allplayers = 900;
   assert.equal(tracker.summary().fields.allplayers, 1);
 });

@@ -147,12 +147,16 @@ async function refresh() {
   });
   try {
     // The race also handles fetch adapters that ignore AbortSignal.
-    const response = await Promise.race([
-      fetch('/api/state', { cache: 'no-store', signal: abort.signal }),
+    const state = await Promise.race([
+      (async () => {
+        const response = await fetch('/api/state', {
+          cache: 'no-store', signal: abort.signal,
+        });
+        if (!response.ok) throw new Error('Data unavailable');
+        return response.json();
+      })(),
       deadline,
     ]);
-    if (!response.ok) throw new Error('Data unavailable');
-    const state = await response.json();
     if (request === latestRefresh) {
       lastSuccessfulFrameAt = Date.now();
       render(state);

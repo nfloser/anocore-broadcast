@@ -2,6 +2,17 @@ name: Windows desktop preview
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/overlay/**'
+      - 'apps/manager/**'
+      - 'adapters/cs2/**'
+      - 'services/engine/**'
+      - 'packages/protocol/**'
+      - 'package.json'
+      - '.github/workflows/windows-desktop.yml'
   pull_request:
     paths:
       - 'apps/desktop/**'
@@ -39,7 +50,11 @@ jobs:
       - name: Create SHA-256 checksums
         shell: pwsh
         run: |
-          Get-ChildItem dist -Filter *.exe | ForEach-Object {
+          $executables = @(Get-ChildItem dist -Filter *.exe -File)
+          if ($executables.Count -eq 0) {
+            throw 'No portable Windows EXE found; cannot create verification checksums'
+          }
+          $executables | ForEach-Object {
             $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
             "$hash  $($_.Name)" | Add-Content dist/SHA256SUMS.txt
           }

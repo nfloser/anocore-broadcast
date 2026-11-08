@@ -120,3 +120,29 @@ test('temporary unavailable response retains known synthetic warning without fak
   assert.equal(hud.elements['ct-score'].textContent, '—');
   assert.equal(hud.elements.notice.hidden, false);
 });
+
+test('known Live waiting state clears Demo watermark before the first GSI frame', async () => {
+  const hud = createHud();
+  hud.complete(0, { ...hud.frame(), demo: true, radar: { kind: 'synthetic', markers: [] } });
+  await hud.settle();
+  assert.equal(hud.elements['demo-mark'].hidden, false);
+  hud.intervals[0].handler();
+  hud.complete(1, { status: 'unavailable', demo: false, settings: {
+    ctName: 'CT', tName: 'T', ctColor: '#123456', tColor: '#abcdef',
+    showRoster: true,
+  } });
+  await hud.settle();
+  assert.equal(hud.elements['demo-mark'].hidden, true);
+  assert.equal(hud.elements['radar-preview'].hidden, true);
+  assert.equal(hud.elements['ct-score'].textContent, '—');
+  assert.equal(hud.elements.notice.hidden, false);
+  // A transport failure without a mode hint must not invent a source switch.
+  hud.intervals[0].handler();
+  hud.requests[2].reject(new Error('temporary polling failure'));
+  await hud.settle();
+  assert.equal(hud.elements['demo-mark'].hidden, true);
+  hud.intervals[0].handler();
+  hud.complete(3, { ...hud.frame(), demo: true });
+  await hud.settle();
+  assert.equal(hud.elements['demo-mark'].hidden, false);
+});

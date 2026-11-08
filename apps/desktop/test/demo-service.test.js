@@ -423,3 +423,81 @@ test('desktop demo reports interrupted GSI and automatically recovers without mo
 test('demo rejects invalid fetch adapter before starting local listeners', async () => {
   await assert.rejects(startDesktopDemo({ fetchImpl: null }), /Invalid demo fetch/);
 });
+
+test('a never-settling synthetic GSI fetch degrades, retries, and then recovers', async () => {
+  let hang = false;
+  let stalledRequests = 0;
+  let aborts = 0;
+  const fetchImpl = (url, options) => {
+    if (!hang) return fetch(url, options);
+    stalledRequests++;
+    options.signal.addEventListener('abort', () => { aborts++; }, { once: true });
+    // Deliberately ignore abort: the service must bound even a broken transport adapter.
+    return new Promise(() => {});
+  };
+  const started = await startDesktopDemo({
+    receiverPort: 0, overlayPort: 0, intervalMs: 100, requestTimeoutMs: 80, fetchImpl,
+  });
+  const stateUrl = started.hudUrl + 'api/state';
+  async function eventually(check, ms = 4000) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {
+      if (await check()) return;
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    throw Error('Timed out waiting for expected demo state');
+  }
+  try {
+    hang = true;
+    await eventually(() => started.getStatus().diagnostics.code === 'demo-interrupted');
+    assert.ok(stalledRequests >= 3);
+    assert.ok(aborts >= 3);
+    const interrupted = await (await fetch(stateUrl)).json();
+    assert.equal(interrupted.status, 'unavailable');
+    assert.deepEqual(interrupted.players, []);
+    assert.equal(interrupted.radar, null);
+    hang = false;
+    await eventually(async () => started.getStatus().diagnostics.code === 'demo' &&
+      (await (await fetch(stateUrl)).json()).status === 'live');
+  } finally {
+    await started.close();
+  }
+});
+
+test('closing a demo aborts a hung in-flight GSI request and releases both services', async () => {
+  let hang = false;
+  let startedRequest;
+  const entered = new Promise(resolve => { startedRequest = resolve; });
+  let observedAbort = false;
+  const fetchImpl = (url, options) => {
+    if (!hang) return fetch(url, options);
+    options.signal.addEventListener('abort', () => { observedAbort = true; }, { once: true });
+    startedRequest();
+    return new Promise(() => {});
+  };
+  const started = await startDesktopDemo({
+    receiverPort: 0, overlayPort: 0, intervalMs: 100,
+    requestTimeoutMs: 10000, fetchImpl,
+  });
+  const hudUrl = started.hudUrl + 'api/state';
+  hang = true;
+  await Promise.race([
+    entered,
+    new Promise((_resolve, reject) => setTimeout(() => reject(Error('No hung request')), 1500)),
+  ]);
+  const closeStart = Date.now();
+  await Promise.race([
+    started.close(),
+    new Promise((_resolve, reject) => setTimeout(() => reject(Error('Hung close')), 1500)),
+  ]);
+  assert.ok(Date.now() - closeStart < 1500);
+  assert.equal(observedAbort, true);
+  await started.close();
+  await assert.rejects(fetch(hudUrl));
+});
+
+test('demo validates timeout options before opening local ports', async () => {
+  for (const requestTimeoutMs of [0, -1, 10, 10001, Infinity, 20.5]) {
+    await assert.rejects(startDesktopDemo({ requestTimeoutMs }), /Invalid demo request timeout/);
+  }
+});

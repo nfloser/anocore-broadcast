@@ -16,10 +16,15 @@ export async function startDesktopDemo({
   overlayPort = 3009,
   settingsPath,
   intervalMs = 2000,
+  requestTimeoutMs = 1500,
   fetchImpl = fetch,
 } = {}) {
   if (!Number.isInteger(intervalMs) || intervalMs < 100 || intervalMs > 60000) {
     throw new TypeError('Invalid demo interval');
+  }
+  if (!Number.isSafeInteger(requestTimeoutMs) ||
+      requestTimeoutMs < 50 || requestTimeoutMs > 10000) {
+    throw new TypeError('Invalid demo request timeout');
   }
   if (typeof fetchImpl !== 'function') {
     throw new TypeError('Invalid demo fetch adapter');
@@ -34,6 +39,8 @@ export async function startDesktopDemo({
   let stopped = false;
   let degraded = false;
   let pending = Promise.resolve();
+  let updating = false;
+  const shutdown = new AbortController();
   let seq = 0;
   try {
     const receiver = await runtime.listen();
@@ -57,6 +64,35 @@ export async function startDesktopDemo({
       },
     });
     const hud = await overlay.listen();
+    async function timedFetch(url, options) {
+      const controller = new AbortController();
+      let timer;
+      let rejectDeadline;
+      const deadline = new Promise((_resolve, reject) => {
+        rejectDeadline = reject;
+      });
+      const cancel = () => {
+        controller.abort();
+        rejectDeadline(new Error('Synthetic GSI request cancelled'));
+      };
+      // The race is intentional: a broken custom fetch adapter may ignore
+      // abort signals. We still must settle the desktop shutdown promptly.
+      if (shutdown.signal.aborted) cancel();
+      else shutdown.signal.addEventListener('abort', cancel, { once: true });
+      timer = setTimeout(() => {
+        controller.abort();
+        rejectDeadline(new Error('Synthetic GSI request timed out'));
+      }, requestTimeoutMs);
+      try {
+        return await Promise.race([
+          Promise.resolve().then(() => fetchImpl(url, { ...options, signal: controller.signal })),
+          deadline,
+        ]);
+      } finally {
+        clearTimeout(timer);
+        shutdown.signal.removeEventListener('abort', cancel);
+      }
+    }
     async function update() {
       if (stopped) return;
       const body = JSON.stringify(createDemoFrame(seq, token));
@@ -67,11 +103,12 @@ export async function startDesktopDemo({
       for (let attempt = 0; attempt < 3; attempt++) {
         if (stopped) return;
         try {
-          const response = await fetchImpl('http://127.0.0.1:' + receiver.port + '/gsi', {
+          const response = await timedFetch('http://127.0.0.1:' + receiver.port + '/gsi', {
             method: 'POST',
             headers: { 'content-type': 'application/json', connection: 'close' },
             body,
           });
+          if (stopped) return;
           if (response.status !== 202) {
             throw new Error('Demo ingestion failed with HTTP ' + response.status);
           }
@@ -86,13 +123,16 @@ export async function startDesktopDemo({
     }
     await update();
     timer = setInterval(() => {
-      pending = pending.then(update).then(() => {
+      // Never enqueue additional updates while a local request is unresolved.
+      if (updating || stopped) return;
+      updating = true;
+      pending = update().then(() => {
         if (!stopped) degraded = false;
       }).catch(() => {
-        // Keep the timer running. Later attempts use the same serialized
-        // promise chain so local transport recovery needs no app restart.
+        // Keep retrying at future ticks; an incomplete synthetic frame
+        // cannot remain a healthy-looking public broadcast.
         if (!stopped) degraded = true;
-      });
+      }).finally(() => { updating = false; });
     }, intervalMs);
     return {
       mode: 'demo',
@@ -109,6 +149,7 @@ export async function startDesktopDemo({
         if (stopped) return;
         stopped = true;
         if (timer !== null) clearInterval(timer);
+        shutdown.abort();
         await pending;
         await overlay.close();
         await runtime.close();
@@ -117,6 +158,7 @@ export async function startDesktopDemo({
   } catch (error) {
     stopped = true;
     if (timer !== null) clearInterval(timer);
+    shutdown.abort();
     if (overlay) await overlay.close();
     await runtime.close();
     throw error;

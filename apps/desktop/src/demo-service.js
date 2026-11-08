@@ -53,13 +53,18 @@ export async function startDesktopDemo({
         // A failed synthetic writer cannot leave a recent-looking old score
         // visible just because the receiver freshness threshold has not elapsed.
         const visible = !degraded && state.status === 'live';
+        if (!visible) {
+          // Do not forward fields from a previously live snapshot. OBS clients
+          // may inspect score properties without checking status first.
+          return { status: 'unavailable', demo: true, settings: config,
+            radar: null, players: [] };
+        }
         return {
           ...state,
-          status: visible ? state.status : 'unavailable',
           demo: true,
           settings: config,
-          radar: visible ? createDemoRadar(view) : null,
-          players: visible && config.showRoster ? state.players : [],
+          radar: createDemoRadar(view),
+          players: config.showRoster ? state.players : [],
         };
       },
     });

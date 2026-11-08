@@ -371,3 +371,55 @@ test('operator controls map every DOM element they read and never remove control
   assert.ok(page.includes('id="controls"'));
   assert.ok(page.includes('id="ctName"'));
 });
+
+test('desktop demo reports interrupted GSI and automatically recovers without mode switch', async () => {
+  let transportHealthy = true;
+  let injectedFailures = 0;
+  const fetchImpl = (...args) => {
+    if (!transportHealthy) {
+      injectedFailures++;
+      return Promise.reject(new Error('injected local demo transport outage'));
+    }
+    return fetch(...args);
+  };
+  const started = await startDesktopDemo({
+    receiverPort: 0, overlayPort: 0, intervalMs: 200, fetchImpl,
+  });
+  const stateUrl = started.hudUrl + 'api/state';
+  async function waitFor(predicate) {
+    const until = Date.now() + 5000;
+    while (Date.now() < until) {
+      if (await predicate()) return;
+      await new Promise(resolve => setTimeout(resolve, 35));
+    }
+    throw new Error('Timed out waiting for demo state transition');
+  }
+  try {
+    assert.equal(started.getStatus().diagnostics.code, 'demo');
+    assert.equal((await (await fetch(stateUrl)).json()).status, 'live');
+    transportHealthy = false;
+    await waitFor(() => started.getStatus().diagnostics.code === 'demo-interrupted');
+    assert.ok(injectedFailures >= 3);
+    const interrupted = await (await fetch(stateUrl)).json();
+    assert.equal(interrupted.status, 'unavailable');
+    assert.equal(interrupted.demo, true);
+    assert.equal(interrupted.radar, null);
+    assert.deepEqual(interrupted.players, []);
+    transportHealthy = true;
+    await waitFor(async () => {
+      if (started.getStatus().diagnostics.code !== 'demo') return false;
+      const current = await (await fetch(stateUrl)).json();
+      return current.status === 'live' && current.radar?.kind === 'synthetic';
+    });
+    assert.equal(started.getStatus().connection, 'synthetic');
+    assert.ok(!JSON.stringify(started.getStatus()).includes('injected local demo'));
+  } finally {
+    await started.close();
+    await started.close();
+  }
+  await assert.rejects(fetch(stateUrl));
+});
+
+test('demo rejects invalid fetch adapter before starting local listeners', async () => {
+  await assert.rejects(startDesktopDemo({ fetchImpl: null }), /Invalid demo fetch/);
+});

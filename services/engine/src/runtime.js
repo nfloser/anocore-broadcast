@@ -20,6 +20,7 @@ export function createBroadcastRuntime({
   clock = () => Date.now(),
   host = '127.0.0.1',
   port = 3008,
+  bodyTimeoutMs = 5_000,
   journalPath,
   maxJournalBytes = 32 * 1024 * 1024,
   onAcceptedShape,
@@ -62,12 +63,10 @@ export function createBroadcastRuntime({
     },
   });
 
-  const receiver = createGsiServer(ingest, { host, port });
+  const receiver = createGsiServer(ingest, { host, port, bodyTimeoutMs });
   return {
     listen: receiver.listen,
-    close: () => !receiver.server.listening ? Promise.resolve() : new Promise((resolve, reject) => {
-      receiver.server.close(error => error ? reject(error) : resolve());
-    }),
+    close: receiver.close,
     view: (at) => timeline.view(at),
     stats: () => timeline.stats(),
     freshness: () => ingest.freshness(),

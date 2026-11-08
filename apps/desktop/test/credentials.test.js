@@ -106,7 +106,7 @@ test('reused key authenticates a fresh live observer process after previous shut
     assert.equal(response.status, 202);
     const state = await (await fetch(live.hudUrl + 'api/state')).json();
     assert.equal(state.status, 'live');
-    assert.equal(state.demo, undefined);
+    assert.equal(state.demo, false);
     assert.ok(!JSON.stringify(state).includes(token));
   } finally {
     await live.close();

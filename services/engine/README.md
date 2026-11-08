@@ -10,7 +10,7 @@
 - Each source has a separate snapshot; it does not yet merge authoritative sources or teams.
 - The default `retention: 'strict'` history stops accepting events at capacity. It intentionally does not silently evict records or claim durable operation.
 - Explicit `retention: 'rolling'` is only for **volatile zero-delay local live previews**: the oldest committed history and duplicate-ID entries are pruned after a successful commit to keep the newest `capacity` events. The engine still tracks last sequence numbers and rejects old or conflicting sequences. The rolling window is **not** a replay history: querying an evicted timestamp or an older observer source returns no snapshot, not reconstructed data. Delayed feeds and journal persistence cannot enable rolling retention. Large out-of-order contiguous runs that exceed capacity still receive backpressure rather than truncating a batch.
-
+  When the receiver wall clock jumps backwards, the rolling read chooses the highest *committed source sequence* among frames that meet the current zero-delay cutoff; replay and strict timelines remain timestamp-ordered. The existing source-freshness threshold still applies and future-dated frames are not exposed prematurely.\n
 ### Time alignment
 `view(at)` uses cutoff `at - delayMs` and will not expose an event whose receiver timestamp is later than the cutoff. This is a **configurable time gate**, **not** verified alignment with CS2/GOTV video, demo ticks or OBS replay. Set delay based on measured end-to-end footage. Do not interpret the output as synchronized with the broadcast before actual validation.
 

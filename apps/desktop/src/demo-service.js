@@ -16,9 +16,13 @@ export async function startDesktopDemo({
   overlayPort = 3009,
   settingsPath,
   intervalMs = 2000,
+  fetchImpl = fetch,
 } = {}) {
   if (!Number.isInteger(intervalMs) || intervalMs < 100 || intervalMs > 60000) {
     throw new TypeError('Invalid demo interval');
+  }
+  if (typeof fetchImpl !== 'function') {
+    throw new TypeError('Invalid demo fetch adapter');
   }
   const token = randomBytes(32).toString('hex');
   const settings = createBroadcastSettings({ filePath: settingsPath });
@@ -28,6 +32,7 @@ export async function startDesktopDemo({
   let overlay = null;
   let timer = null;
   let stopped = false;
+  let degraded = false;
   let pending = Promise.resolve();
   let seq = 0;
   try {
@@ -38,12 +43,16 @@ export async function startDesktopDemo({
         const view = runtime.view();
         const state = createPublicScoreboard(view);
         const config = settings.get();
+        // A failed synthetic writer cannot leave a recent-looking old score
+        // visible just because the receiver freshness threshold has not elapsed.
+        const visible = !degraded && state.status === 'live';
         return {
           ...state,
+          status: visible ? state.status : 'unavailable',
           demo: true,
           settings: config,
-          radar: state.status === 'live' ? createDemoRadar(view) : null,
-          players: config.showRoster ? state.players : [],
+          radar: visible ? createDemoRadar(view) : null,
+          players: visible && config.showRoster ? state.players : [],
         };
       },
     });
@@ -58,7 +67,7 @@ export async function startDesktopDemo({
       for (let attempt = 0; attempt < 3; attempt++) {
         if (stopped) return;
         try {
-          const response = await fetch('http://127.0.0.1:' + receiver.port + '/gsi', {
+          const response = await fetchImpl('http://127.0.0.1:' + receiver.port + '/gsi', {
             method: 'POST',
             headers: { 'content-type': 'application/json', connection: 'close' },
             body,
@@ -77,19 +86,22 @@ export async function startDesktopDemo({
     }
     await update();
     timer = setInterval(() => {
-      pending = pending.then(update).catch(() => {
-        // Do not claim valid live data after ingestion stops working.
-        // Freshness checks eventually hide the old snapshot.
-        clearInterval(timer);
-        timer = null;
+      pending = pending.then(update).then(() => {
+        if (!stopped) degraded = false;
+      }).catch(() => {
+        // Keep the timer running. Later attempts use the same serialized
+        // promise chain so local transport recovery needs no app restart.
+        if (!stopped) degraded = true;
       });
     }, intervalMs);
     return {
       mode: 'demo',
       hudUrl: 'http://127.0.0.1:' + hud.port + '/',
       getStatus: () => ({
-        mode: 'demo', connection: 'synthetic', ageMs: null,
-        diagnostics: summarizeConnection({ mode: 'demo', connection: 'synthetic', ageMs: null }),
+        mode: 'demo', connection: degraded ? 'interrupted' : 'synthetic', ageMs: null,
+        diagnostics: summarizeConnection({
+          mode: 'demo', connection: degraded ? 'interrupted' : 'synthetic', ageMs: null,
+        }),
       }),
       getSettings: () => settings.get(),
       updateSettings: changes => settings.update(changes),

@@ -25,7 +25,36 @@ export function createSafeGsiShapeTracker() {
       const fields = Object.fromEntries(FIELD_KEYS.map((key, i) => [
         key, samples.reduce((sum, sample) => sum + (sample[i] ? 1 : 0), 0),
       ]));
-      return { windowSize: WINDOW, samples: samples.length, totalAccepted, fields };
+      const scoreboardIndex = FIELD_KEYS.indexOf('completeScoreboard');
+      const rosterIndex = FIELD_KEYS.indexOf('nonemptyAllplayers');
+      const transitions = {
+        scoreboardBecameIncomplete: 0,
+        scoreboardBecameComplete: 0,
+        rosterBecameMissing: 0,
+        rosterBecameNonempty: 0,
+        longestIncompleteScoreboardStreak: 0,
+      };
+      let incompleteStreak = 0;
+      for (let i = 0; i < samples.length; i++) {
+        const current = samples[i];
+        incompleteStreak = current[scoreboardIndex] ? 0 : incompleteStreak + 1;
+        transitions.longestIncompleteScoreboardStreak = Math.max(
+          transitions.longestIncompleteScoreboardStreak, incompleteStreak,
+        );
+        if (i === 0) continue;
+        const previous = samples[i - 1];
+        if (previous[scoreboardIndex] && !current[scoreboardIndex]) {
+          transitions.scoreboardBecameIncomplete++;
+        } else if (!previous[scoreboardIndex] && current[scoreboardIndex]) {
+          transitions.scoreboardBecameComplete++;
+        }
+        if (previous[rosterIndex] && !current[rosterIndex]) {
+          transitions.rosterBecameMissing++;
+        } else if (!previous[rosterIndex] && current[rosterIndex]) {
+          transitions.rosterBecameNonempty++;
+        }
+      }
+      return { windowSize: WINDOW, samples: samples.length, totalAccepted, fields, transitions };
     },
   };
 }

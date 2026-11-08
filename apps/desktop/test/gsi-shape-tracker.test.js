@@ -47,3 +47,50 @@ test('shape summary allows only true booleans and cannot be mutated by caller', 
   result.fields.allplayers = 900;
   assert.equal(tracker.summary().fields.allplayers, 1);
 });
+
+test('aggregate GSI transitions distinguish alternating partial frames from a long gap', () => {
+  const tracker = createSafeGsiShapeTracker();
+  const sample = (completeScoreboard, nonemptyAllplayers) => {
+    tracker.accept({ completeScoreboard, nonemptyAllplayers });
+  };
+  sample(true, true);
+  sample(false, false);
+  sample(false, false);
+  sample(true, true);
+  sample(false, true);
+  const result = tracker.summary();
+  assert.deepEqual(result.transitions, {
+    scoreboardBecameIncomplete: 2,
+    scoreboardBecameComplete: 1,
+    rosterBecameMissing: 1,
+    rosterBecameNonempty: 1,
+    longestIncompleteScoreboardStreak: 2,
+  });
+  result.transitions.scoreboardBecameIncomplete = 999;
+  assert.equal(tracker.summary().transitions.scoreboardBecameIncomplete, 2);
+});
+
+test('rollover excludes evicted transitions and does not infer frames outside the window', () => {
+  const tracker = createSafeGsiShapeTracker();
+  tracker.accept({ completeScoreboard: true, nonemptyAllplayers: true });
+  for (let i = 0; i < 64; i++) {
+    tracker.accept({ completeScoreboard: false, nonemptyAllplayers: false });
+  }
+  const result = tracker.summary();
+  assert.equal(result.samples, 64);
+  assert.equal(result.totalAccepted, 65);
+  assert.deepEqual(result.transitions, {
+    scoreboardBecameIncomplete: 0,
+    scoreboardBecameComplete: 0,
+    rosterBecameMissing: 0,
+    rosterBecameNonempty: 0,
+    longestIncompleteScoreboardStreak: 64,
+  });
+  assert.deepEqual(createSafeGsiShapeTracker().summary().transitions, {
+    scoreboardBecameIncomplete: 0,
+    scoreboardBecameComplete: 0,
+    rosterBecameMissing: 0,
+    rosterBecameNonempty: 0,
+    longestIncompleteScoreboardStreak: 0,
+  });
+});

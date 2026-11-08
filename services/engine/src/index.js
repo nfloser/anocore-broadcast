@@ -107,8 +107,7 @@ export function createMatchTimeline({
     // strict timeline keeps full replay/journal semantics and backpressure.
     if (retention === 'rolling') {
       const overflow = Math.max(0, history.length + run.length - capacity);
-      for (let i = 0; i < overflow; i++) {
-        const removed = history.shift();
+      for (const removed of history.splice(0, overflow)) {
         sources.get(removed.sourceId).acceptedIds.delete(removed.eventId);
       }
     }

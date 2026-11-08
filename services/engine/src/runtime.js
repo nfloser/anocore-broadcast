@@ -16,6 +16,7 @@ export function createBroadcastRuntime({
   delayMs = 0,
   staleAfterMs = 5_000,
   capacity = 10_000,
+  retention = 'strict',
   clock = () => Date.now(),
   host = '127.0.0.1',
   port = 3008,
@@ -23,12 +24,15 @@ export function createBroadcastRuntime({
   maxJournalBytes = 32 * 1024 * 1024,
   onAcceptedShape,
 } = {}) {
+  if (retention === 'rolling' && journalPath !== undefined) {
+    throw new TypeError('Rolling retention is incompatible with journal persistence');
+  }
   // No file is created unless persistence is explicitly configured.
   const journal = journalPath === undefined ? null :
     createEventJournal({ filePath: journalPath, maxBytes: maxJournalBytes });
   let recovering = true;
   const timeline = createMatchTimeline({
-    matchId, delayMs, staleAfterMs, capacity, clock,
+    matchId, delayMs, staleAfterMs, capacity, retention, clock,
     onCommit: events => { if (!recovering) journal?.append(events); },
   });
   if (journal) {

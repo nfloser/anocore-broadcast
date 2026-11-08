@@ -33,6 +33,7 @@ export function createMatchTimeline({
   delayMs = 0,
   staleAfterMs = 5_000,
   capacity = DEFAULT_CAPACITY,
+  retention = 'strict',
   clock = () => Date.now(),
   onCommit = () => {},
 } = {}) {
@@ -41,6 +42,10 @@ export function createMatchTimeline({
     throw new TypeError('Invalid matchId');
   }
   ensureNonnegativeInt(delayMs, 'delayMs');
+  if (!['strict', 'rolling'].includes(retention)) throw new TypeError('Invalid retention mode');
+  if (retention === 'rolling' && delayMs !== 0) {
+    throw new TypeError('Rolling history cannot use a replay delay');
+  }
   if (!Number.isSafeInteger(staleAfterMs) || staleAfterMs < 1) {
     throw new TypeError('Invalid staleAfterMs');
   }
@@ -83,7 +88,10 @@ export function createMatchTimeline({
     // Do not partially commit a run if the history has insufficient space.
     let available = 1;
     while (state.pending.has(event.sequence + available)) available++;
-    if (history.length + available > capacity) return { status: 'backpressure' };
+    if ((retention === 'strict' && history.length + available > capacity) ||
+        (retention === 'rolling' && available > capacity)) {
+      return { status: 'backpressure' };
+    }
 
     const run = [structuredClone(event)];
     for (let sequence = event.sequence + 1; state.pending.has(sequence); sequence++) {
@@ -94,6 +102,14 @@ export function createMatchTimeline({
       onCommit(structuredClone(run));
     } catch {
       return { status: 'persistence_error' };
+    }
+    // Only volatile zero-delay mode may discard old committed events. The
+    // strict timeline keeps full replay/journal semantics and backpressure.
+    if (retention === 'rolling') {
+      const overflow = Math.max(0, history.length + run.length - capacity);
+      for (const removed of history.splice(0, overflow)) {
+        sources.get(removed.sourceId).acceptedIds.delete(removed.eventId);
+      }
     }
     for (const item of run) {
       state.pending.delete(item.sequence);

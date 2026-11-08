@@ -104,3 +104,50 @@ test('accepts the legacy-labelled CS2 GSI provider', () => {
   event.payload.provider.name = 'Counter-Strike: Global Offensive';
   assert.equal(engine.ingest(event).status, 'accepted');
 });
+
+test('volatile zero-delay history accepts updates after capacity and rejects old sequence replays', () => {
+  const engine = createMatchTimeline({
+    matchId: 'match-1', retention: 'rolling', capacity: 3,
+    clock: () => 5000, staleAfterMs: 10000,
+  });
+  for (let sequence = 1; sequence <= 12; sequence++) {
+    assert.deepEqual(engine.ingest(packet(sequence, 1000 + sequence)), {
+      status: 'accepted', count: 1,
+    });
+    assert.equal(engine.stats().eventCount, Math.min(3, sequence));
+  }
+  assert.equal(engine.view().snapshots['observer-1'].map.round, 12);
+  assert.equal(engine.view(1003).snapshots['observer-1'], undefined,
+    'Evicted historical views must not silently reconstruct prior state');
+  assert.equal(engine.lastSequence('observer-1'), 12);
+  assert.equal(engine.ingest(packet(1, 1001)).status, 'duplicate');
+  assert.equal(engine.ingest({ ...packet(5), eventId: 'another-id' }).status, 'duplicate');
+  assert.equal(engine.stats().eventCount, 3);
+});
+
+test('volatile retention preserves per-source sequence gaps and freshness', () => {
+  const engine = createMatchTimeline({
+    matchId: 'match-1', retention: 'rolling', capacity: 2,
+    clock: () => 5000, staleAfterMs: 10000,
+  });
+  assert.equal(engine.ingest(packet(1, 1000)).status, 'accepted');
+  assert.equal(engine.ingest(packet(2, 1003, 'observer-2')).status, 'buffered');
+  assert.equal(engine.view().freshness['observer-2'].status, 'waiting');
+  assert.deepEqual(engine.ingest(packet(1, 1002, 'observer-2')), {
+    status: 'accepted', count: 2,
+  });
+  assert.equal(engine.stats().eventCount, 2);
+  assert.equal(engine.view().snapshots['observer-1'], undefined);
+  assert.equal(engine.view().snapshots['observer-2'].map.round, 2);
+  assert.equal(engine.lastSequence('observer-1'), 1);
+  assert.equal(engine.lastSequence('observer-2'), 2);
+  assert.equal(engine.ingest(packet(1, 1000)).status, 'duplicate');
+});
+
+test('rolling mode is explicit and incompatible with replay delay', () => {
+  assert.throws(() => createMatchTimeline({ matchId: 'match-1', retention: 'missing' }), /retention/i);
+  assert.throws(() => createMatchTimeline({ matchId: 'match-1', retention: 'rolling', delayMs: 1 }), /rolling.*delay/i);
+  const strict = createMatchTimeline({ matchId: 'match-1', capacity: 1 });
+  assert.equal(strict.ingest(packet(1)).status, 'accepted');
+  assert.equal(strict.ingest(packet(2)).status, 'backpressure');
+});

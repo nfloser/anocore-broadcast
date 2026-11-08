@@ -112,3 +112,32 @@ test('invalid startup parameters fail before binding a receiver', () => {
     matchId: 'match-1', token, delayMs: -1,
   }), /delayMs/);
 });
+
+test('volatile rolling local GSI receiver keeps accepting verified snapshots after memory capacity', async t => {
+  let now = 1000;
+  const { runtime, url } = await serve({
+    retention: 'rolling', capacity: 2, clock: () => now, staleAfterMs: 10000,
+  }, t);
+  for (let round = 1; round <= 8; round++) {
+    now += 100;
+    const response = await fetch(url, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(snapshot(round)),
+    });
+    assert.equal(response.status, 202, 'round ' + round + ' unexpectedly rejected');
+    assert.equal(runtime.stats().eventCount, Math.min(round, 2));
+  }
+  assert.equal(runtime.view().snapshots['observer-1'].map.round, 8);
+  assert.equal(runtime.view().freshness['observer-1'].lastSequence, 8);
+  assert.equal(runtime.freshness().status, 'live');
+});
+
+test('persistent journals cannot use rolling timeline retention', () => {
+  assert.throws(() => createBroadcastRuntime({
+    matchId: 'match-1', token, journalPath: '/tmp/unused-test-journal.jsonl',
+    retention: 'rolling',
+  }), /rolling.*journal/i);
+  assert.throws(() => createBroadcastRuntime({
+    matchId: 'match-1', token, delayMs: 1000, retention: 'rolling',
+  }), /rolling.*delay/i);
+});

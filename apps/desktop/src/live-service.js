@@ -29,6 +29,9 @@ export async function startDesktopLive({
   const shapeTracker = createSafeGsiShapeTracker();
   const runtime = createBroadcastRuntime({
     matchId, token, port: receiverPort, clock, staleAfterMs,
+    // The desktop never persists or replays live observer packets. Keep the
+    // freshest in-memory window instead of stopping after 10,000 updates.
+    retention: 'rolling',
     onAcceptedShape: shape => shapeTracker.accept(shape),
   });
   let overlay = null;

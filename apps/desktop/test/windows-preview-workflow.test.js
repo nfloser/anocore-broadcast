@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 
-const workflow = readFileSync(new URL('../../../.github/workflows/windows-desktop.yml', import.meta.url), 'utf8');
+const workflow = readFileSync(new URL('../../../.github/workflows/windows-desktop.yml', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
 const guide = readFileSync(new URL('../REAL-OBSERVER-ACCEPTANCE.md', import.meta.url), 'utf8');
 

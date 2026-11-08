@@ -5,6 +5,20 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+function assertUnavailableDemoHasNoOldMatchState(state) {
+  assert.equal(state.status, 'unavailable');
+  assert.equal(state.demo, true);
+  assert.equal(state.radar, null);
+  assert.deepEqual(state.players, []);
+  // Consumers may read fields independently from status; old match state must
+  // not survive as public values during a synthetic transport interruption.
+  for (const key of ['map', 'mapPhase', 'round', 'ctScore', 'tScore',
+    'roundPhase', 'bombState', 'countdownPhase', 'countdownSeconds']) {
+    assert.equal(Object.hasOwn(state, key), false, 'Stale public field: ' + key);
+  }
+  assert.ok(state.settings);
+}
+
 test('desktop demo drives the existing GSI/engine/HUD pipeline and cleans up', async () => {
   const started = await startDesktopDemo({ receiverPort: 0, overlayPort: 0, intervalMs: 250 });
   assert.equal(started.mode, 'demo');
@@ -401,10 +415,7 @@ test('desktop demo reports interrupted GSI and automatically recovers without mo
     await waitFor(() => started.getStatus().diagnostics.code === 'demo-interrupted');
     assert.ok(injectedFailures >= 3);
     const interrupted = await (await fetch(stateUrl)).json();
-    assert.equal(interrupted.status, 'unavailable');
-    assert.equal(interrupted.demo, true);
-    assert.equal(interrupted.radar, null);
-    assert.deepEqual(interrupted.players, []);
+    assertUnavailableDemoHasNoOldMatchState(interrupted);
     transportHealthy = true;
     await waitFor(async () => {
       if (started.getStatus().diagnostics.code !== 'demo') return false;
@@ -453,9 +464,7 @@ test('a never-settling synthetic GSI fetch degrades, retries, and then recovers'
     assert.ok(stalledRequests >= 3);
     assert.ok(aborts >= 3);
     const interrupted = await (await fetch(stateUrl)).json();
-    assert.equal(interrupted.status, 'unavailable');
-    assert.deepEqual(interrupted.players, []);
-    assert.equal(interrupted.radar, null);
+    assertUnavailableDemoHasNoOldMatchState(interrupted);
     hang = false;
     await eventually(async () => started.getStatus().diagnostics.code === 'demo' &&
       (await (await fetch(stateUrl)).json()).status === 'live');

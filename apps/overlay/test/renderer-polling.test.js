@@ -17,6 +17,13 @@ function createHud() {
   const elements = Object.fromEntries(ids.map(id => [id, element()]));
   const requests = [];
   const intervals = [];
+  const deadlines = new Map();
+  let currentTime = 0;
+  let nextDeadlineId = 0;
+  class FakeAbortController {
+    constructor() { this.signal = { aborted: false }; }
+    abort() { this.signal.aborted = true; }
+  }
   const document = {
     getElementById: id => elements[id] ?? null,
     querySelector: selector => selector === '.broadcast-stage' ? element() : null,
@@ -29,6 +36,14 @@ function createHud() {
       requests.push({ url, options, resolve, reject });
     }),
     setInterval: (handler, ms) => { intervals.push({ handler, ms }); },
+    setTimeout: (handler, ms) => {
+      const id = ++nextDeadlineId;
+      deadlines.set(id, { handler, due: currentTime + ms });
+      return id;
+    },
+    clearTimeout: id => deadlines.delete(id),
+    AbortController: FakeAbortController,
+    Date: { now: () => currentTime },
     String, Number, Object, Array,
   }, { timeout: 1000 });
   assert.equal(intervals.length, 1);
@@ -47,7 +62,16 @@ function createHud() {
     });
   }
   async function settle() { await new Promise(resolve => setImmediate(resolve)); }
-  return { elements, requests, intervals, frame, complete, settle };
+  function advance(ms) {
+    currentTime += ms;
+    for (const [id, timer] of deadlines) {
+      if (timer.due <= currentTime) {
+        deadlines.delete(id);
+        timer.handler();
+      }
+    }
+  }
+  return { elements, requests, intervals, deadlines, frame, complete, settle, advance };
 }
 
 test('old OBS fetch cannot replace a newer scoreboard', async () => {
@@ -145,4 +169,44 @@ test('known Live waiting state clears Demo watermark before the first GSI frame'
   hud.complete(3, { ...hud.frame(), demo: true });
   await hud.settle();
   assert.equal(hud.elements['demo-mark'].hidden, false);
+});
+
+test('hung OBS fetches cannot leave previous live scores visible after silence threshold', async () => {
+  const hud = createHud();
+  hud.complete(0, hud.frame({ round: 18, ctScore: 11, tScore: 7 }));
+  await hud.settle();
+  assert.equal(hud.elements['ct-score'].textContent, '11');
+  hud.advance(3001);
+  hud.intervals[0].handler();
+  await hud.settle();
+  assert.equal(hud.elements['ct-score'].textContent, '—');
+  assert.equal(hud.elements.round.textContent, 'WAITING FOR DATA');
+  assert.equal(hud.elements.notice.hidden, false);
+  // A healthy update after the outage restores the real, current score.
+  hud.complete(1, hud.frame({ round: 19, ctScore: 12, tScore: 7 }));
+  await hud.settle();
+  assert.equal(hud.elements['ct-score'].textContent, '12');
+  assert.equal(hud.elements.round.textContent, 'ROUND 19');
+});
+
+test('OBS polling enforces deadlines and caps outstanding requests that ignore abort', async () => {
+  const hud = createHud();
+  for (let i = 0; i < 20; i++) hud.intervals[0].handler();
+  assert.ok(hud.requests.length <= 4, 'unbounded pending HTTP requests');
+  assert.equal(hud.deadlines.size, hud.requests.length);
+  hud.advance(2001);
+  await hud.settle();
+  assert.equal(hud.deadlines.size, 0);
+  assert.ok(hud.requests.every(request => request.options.signal.aborted));
+  const issuedBefore = hud.requests.length;
+  hud.intervals[0].handler();
+  assert.equal(hud.requests.length, issuedBefore + 1);
+  hud.complete(0, hud.frame({ round: 6, ctScore: 3 }));
+  await hud.settle();
+  assert.notEqual(hud.elements.round.textContent, 'ROUND 6',
+    'late completion after expiry resurrected an old result');
+  hud.complete(issuedBefore, hud.frame({ round: 8, ctScore: 5 }));
+  await hud.settle();
+  assert.equal(hud.elements.round.textContent, 'ROUND 8');
+  assert.equal(hud.elements['ct-score'].textContent, '5');
 });

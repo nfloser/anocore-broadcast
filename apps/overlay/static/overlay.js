@@ -122,18 +122,59 @@ function render(state) {
   }
 }
 
-// Polls may overlap: only the latest requested state is authoritative.
+// Bound stuck OBS Browser Source requests. A missing HTTP response must
+// never leave the last successful scoreboard on screen indefinitely.
+const POLL_TIMEOUT_MS = 2000;
+const STALE_FRAME_MS = 3000;
+const MAX_PENDING_POLLS = 4;
 let latestRefresh = 0;
+let pendingPolls = 0;
+let lastSuccessfulFrameAt = Date.now();
+
 async function refresh() {
+  // Preserve latest-request-wins behavior without accumulating endless
+  // network requests when the local HUD server or browser network stack hangs.
+  if (pendingPolls >= MAX_PENDING_POLLS) return;
   const request = ++latestRefresh;
+  const abort = new AbortController();
+  pendingPolls++;
+  let deadlineTimer;
+  const deadline = new Promise((_resolve, reject) => {
+    deadlineTimer = setTimeout(() => {
+      abort.abort();
+      reject(new Error('HUD state request timed out'));
+    }, POLL_TIMEOUT_MS);
+  });
   try {
-    const response = await fetch('/api/state', { cache: 'no-store' });
-    if (!response.ok) throw new Error('Data unavailable');
-    const state = await response.json();
-    if (request === latestRefresh) render(state);
+    // The race also handles fetch adapters that ignore AbortSignal.
+    const state = await Promise.race([
+      (async () => {
+        const response = await fetch('/api/state', {
+          cache: 'no-store', signal: abort.signal,
+        });
+        if (!response.ok) throw new Error('Data unavailable');
+        return response.json();
+      })(),
+      deadline,
+    ]);
+    if (request === latestRefresh) {
+      lastSuccessfulFrameAt = Date.now();
+      render(state);
+    }
   } catch {
     if (request === latestRefresh) render({ status: 'unavailable' });
+  } finally {
+    clearTimeout(deadlineTimer);
+    pendingPolls--;
   }
 }
+
+function poll() {
+  // Always run the freshness check, even if all network slots are occupied.
+  if (Date.now() - lastSuccessfulFrameAt > STALE_FRAME_MS) {
+    render({ status: 'unavailable' });
+  }
+  refresh();
+}
 refresh();
-setInterval(refresh, 500);
+setInterval(poll, 500);

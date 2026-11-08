@@ -13,6 +13,12 @@ test('diagnostics classify demo and never-connected observer without fake timing
   });
 });
 
+test('synthetic demo interruption does not masquerade as a healthy demo', () => {
+  assert.deepEqual(summarizeConnection({ mode: 'demo', connection: 'interrupted', ageMs: null }), {
+    code: 'demo-interrupted', ageSeconds: null,
+  });
+});
+
 test('diagnostics report bounded, rounded age only after valid authenticated data', () => {
   assert.deepEqual(summarizeConnection({ mode: 'live', connection: 'live', ageMs: 1999 }), {
     code: 'connected', ageSeconds: 1,

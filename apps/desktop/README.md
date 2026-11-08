@@ -34,6 +34,19 @@ The exported CFG contains a randomly generated authentication key required by CS
 
 The OBS Browser Source URL remains `http://127.0.0.1:3009/`, copied via the Broadcast menu. The live HUD does **not** include the synthetic demo radar, does not publish player world coordinates, and has no verified GOTV/video-frame synchronization. Test the source using an authorized observer only; this integration has not yet undergone a real CS2 or clean Windows acceptance test.
 
+## Download a tested Windows EXE from merged main
+
+After a relevant merge into `main`, the **Windows desktop preview** workflow runs again against the **merged commit** (not merely the earlier PR head). Open the [Windows desktop preview workflow](https://github.com/nfloser/anocore-broadcast/actions/workflows/windows-desktop.yml), choose the most recent **successful main-branch run** and check its commit SHA against the commit intended for the CS2/GOTV acceptance session. On the run page, download the `anocore-broadcast-windows-preview` artifact from **Artifacts** and extract the EXE alongside `SHA256SUMS.txt`. This is an unsigned preview artifact retained for 7 days, not a production release.
+
+From PowerShell in the extracted artifact directory, verify its actual filename against the checksum file:
+
+```powershell
+Get-Content .\SHA256SUMS.txt
+Get-FileHash '.\AnoCore-Broadcast-0.1.0-win-x64.exe' -Algorithm SHA256
+```
+
+Compare the hex hashes (case-insensitive), then note the run URL and merged SHA in the [real observer acceptance record](./REAL-OBSERVER-ACCEPTANCE.md). If the artifact has expired, explicitly re-run the workflow on `main` using **Run workflow**; do not substitute an unverified local build. Never treat a successful packaged start/stop check as real CS2/GOTV acceptance.
+
 ## Windows portable preview build
 
 The `Windows desktop preview` GitHub Actions workflow packages an unsigned x64 portable Electron executable and publishes its SHA-256 checksum as a workflow artifact. It is a test artifact, **not** a signed/released/production-ready installation. Preview artifacts must be independently tested on an actual clean Windows machine; security prompts may appear for unsigned binaries.

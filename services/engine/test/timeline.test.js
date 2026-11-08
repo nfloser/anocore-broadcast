@@ -151,3 +151,34 @@ test('rolling mode is explicit and incompatible with replay delay', () => {
   assert.equal(strict.ingest(packet(1)).status, 'accepted');
   assert.equal(strict.ingest(packet(2)).status, 'backpressure');
 });
+
+test('rolling Live selects newest sequence after receiver wall clock moves backwards', () => {
+  let now = 20_000;
+  const engine = createMatchTimeline({
+    matchId: 'match-1', retention: 'rolling', staleAfterMs: 1_000,
+    capacity: 2, clock: () => now,
+  });
+  assert.equal(engine.ingest(packet(1, 20_000, 'observer-1', 'de_nuke')).status, 'accepted');
+  now = 19_900; // Windows wall clock was corrected backwards.
+  assert.equal(engine.ingest(packet(2, 19_900, 'observer-1', 'de_ancient')).status, 'accepted');
+  now = 20_001; // The previous (older) packet is visible again by timestamp.
+  assert.equal(engine.view().snapshots['observer-1'].map.round, 2);
+  assert.equal(engine.view().snapshots['observer-1'].map.name, 'de_ancient');
+  assert.equal(engine.view().freshness['observer-1'].status, 'live');
+  assert.equal(engine.ingest(packet(3, 19_950, 'observer-1', 'de_inferno')).status, 'accepted');
+  assert.equal(engine.stats().eventCount, 2);
+  assert.equal(engine.view().snapshots['observer-1'].map.round, 3);
+  now = 21_001;
+  assert.equal(engine.view().freshness['observer-1'].status, 'stale');
+  assert.equal(engine.view().snapshots['observer-1'], undefined);
+});
+
+test('strict delayed replay still orders visible frames by receive timestamp', () => {
+  const engine = createMatchTimeline({
+    matchId: 'match-1', delayMs: 100, staleAfterMs: 1000,
+  });
+  engine.ingest(packet(1, 10_000, 'observer-1', 'de_nuke'));
+  engine.ingest(packet(2, 9_900, 'observer-1', 'de_ancient'));
+  assert.equal(engine.view(10_100).snapshots['observer-1'].map.round, 1);
+  assert.equal(engine.view(10_001).snapshots['observer-1'].map.round, 2);
+});

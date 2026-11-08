@@ -262,3 +262,18 @@ test('real observer acceptance protocol matches actual controls and stays explic
   assert.match(guide, /never auto-mark accepted/);
   assert.doesNotMatch(guide, /password\s*[:=]\s*\S{8}/i);
 });
+
+test('operator renderer warns while synthetic demo ingestion is interrupted', async () => {
+  const ui = renderer();
+  await ui.flush();
+  ui.setDiagnostic('demo-interrupted');
+  await ui.intervals[0].fn();
+  assert.match(ui.elements['session-status'].textContent, /DEMO.*INTERRUPTED/);
+  assert.match(ui.elements['session-help'].textContent, /retrying automatically/);
+  assert.equal(ui.elements['session-panel'].dataset.connection, 'demo-interrupted');
+  assert.equal(ui.elements['setup-demo'].disabled, true);
+  assert.equal(ui.elements['setup-live'].disabled, false);
+  ui.setDiagnostic('demo');
+  await ui.intervals[0].fn();
+  assert.match(ui.elements['session-status'].textContent, /SYNTHETIC DATA/);
+});

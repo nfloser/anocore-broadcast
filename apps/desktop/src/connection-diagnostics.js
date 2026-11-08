@@ -6,6 +6,9 @@ export function summarizeConnection({ mode, connection, ageMs } = {}) {
   if (mode === 'demo' && connection === 'synthetic' && ageMs == null) {
     return { code: 'demo', ageSeconds: null };
   }
+  if (mode === 'demo' && connection === 'interrupted') {
+    return { code: 'demo-interrupted', ageSeconds: null };
+  }
   if (mode !== 'live') return { code: 'unavailable', ageSeconds: null };
   if (connection === 'waiting' && ageMs == null) {
     return { code: 'waiting', ageSeconds: null };

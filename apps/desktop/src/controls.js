@@ -38,6 +38,10 @@ const help = Object.freeze({
     heading: 'DEMO · SYNTHETIC DATA',
     message: 'The preview uses generated 5v5 data. Choose Broadcast → Start Live Observer to connect CS2.',
   },
+  'demo-interrupted': {
+    heading: 'DEMO · DATA INTERRUPTED',
+    message: 'Synthetic GSI updates are failing. The old demo scoreboard is hidden and the desktop app is retrying automatically. If this persists, restart the preview.',
+  },
   waiting: {
     heading: 'LIVE · WAITING FOR CS2',
     message: 'No authenticated GSI update has arrived yet. Verify that Live Observer is running, export the local CS2 GSI CFG into game/csgo/cfg, restart CS2 and join an observer/spectator session. This does not identify a specific connection failure.',
